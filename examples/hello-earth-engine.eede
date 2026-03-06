@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "cells": [
+    {
+      "language": "javascript",
+      "source": "// Load SRTM elevation data and display it.\nvar dem = ee.Image('USGS/SRTMGL1_003');\nMap.addLayer(dem, {min: 0, max: 3000, palette: ['green', 'yellow', 'brown', 'white']}, 'Elevation');\nMap.setCenter(-122.4, 37.8, 9);\nprint('DEM loaded:', dem.bandNames());",
+      "kind": "code"
+    },
+    {
+      "language": "markdown",
+      "source": "## Compute NDVI from Landsat 8\n\nThis cell demonstrates dual-language support — the JS cell above loaded the DEM, and this Python cell computes NDVI from a Landsat scene.",
+      "kind": "markup"
+    },
+    {
+      "language": "python",
+      "source": "# Compute NDVI from a Landsat 8 scene.\nimage = ee.Image('LANDSAT/LC08/C02/T1_TOA/LC08_044034_20140318')\nndvi = image.normalizedDifference(['B5', 'B4']).rename('NDVI')\nMap.addLayer(ndvi, {'min': -0.1, 'max': 0.8, 'palette': ['brown', 'yellow', 'green']}, 'NDVI')\nprint('NDVI computed')",
+      "kind": "code"
+    },
+    {
+      "language": "javascript",
+      "source": "// Compute basic statistics over the SF Bay Area.\nvar sfBay = ee.Geometry.Rectangle([-122.6, 37.4, -122.0, 37.9]);\nvar stats = dem.reduceRegion({\n  reducer: ee.Reducer.minMax(),\n  geometry: sfBay,\n  scale: 90\n});\nprint('Elevation stats (SF Bay):', stats);",
+      "kind": "code"
+    }
+  ]
+}
