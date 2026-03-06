@@ -10,6 +10,11 @@ import {
   pyDeserializeVars,
   pySerializeVars,
 } from './variableBridge';
+import {
+  ChartData,
+  chartToHtml,
+  chartShimJS,
+} from './chartRenderer';
 
 // The notebook controller executes JS and Python cells
 // against the Earth Engine API. JS runs via a child
@@ -165,6 +170,21 @@ export class EENotebookController
       );
     }
 
+    // Render charts as SVG in cell output.
+    if (parsed.charts && parsed.charts.length > 0) {
+      for (const chart of parsed.charts) {
+        const svg = chartToHtml(chart);
+        outputs.push(
+          new vscode.NotebookCellOutput([
+            vscode.NotebookCellOutputItem.text(
+              svg,
+              'text/html'
+            ),
+          ])
+        );
+      }
+    }
+
     if (outputs.length === 0) {
       outputs.push(
         new vscode.NotebookCellOutput([
@@ -260,6 +280,7 @@ const prints = [];
 const layers = [];
 let mapCenter = null;
 let pendingLayers = 0;
+${chartShimJS()}
 
 function print(...args) {
   const strs = args.map(a => {
@@ -278,7 +299,9 @@ function emitResult() {
   console.log(JSON.stringify({
     prints, layers, center: mapCenter,
     bridgeVars: typeof __bridge_vars !== 'undefined'
-      ? __bridge_vars : []
+      ? __bridge_vars : [],
+    charts: typeof __charts !== 'undefined'
+      ? __charts : []
   }));
 }
 
@@ -508,6 +531,7 @@ _orig_print(json.dumps({
       zoom: number;
     } | null;
     bridgeVars?: SerializedVar[];
+    charts?: ChartData[];
   } {
     try {
       // Find the last JSON line in stdout.
