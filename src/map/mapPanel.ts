@@ -153,12 +153,31 @@ export class MapPanel {
       font-size: 11px; font-family: monospace;
       opacity: 0.9;
     }
+    .geom-toolbar {
+      position: absolute; bottom: 4px; right: 10px;
+      z-index: 1000;
+      background: var(--vscode-editor-background, #fff);
+      color: var(--vscode-editor-foreground, #000);
+      border: 1px solid var(--vscode-widget-border, #ccc);
+      border-radius: 4px; padding: 4px 8px;
+      font-size: 11px;
+      font-family: var(--vscode-font-family, sans-serif);
+      display: none; cursor: pointer;
+    }
+    .geom-toolbar:hover {
+      background: var(--vscode-button-background, #007acc);
+      color: var(--vscode-button-foreground, #fff);
+    }
   </style>
 </head>
 <body>
   <div id="map"></div>
   <div class="layer-control" id="layerControl"></div>
   <div class="coords" id="coords">0.000, 0.000</div>
+  <div class="geom-toolbar" id="geomToolbar"
+    onclick="copyAllGeometries()">
+    Copy All as FeatureCollection
+  </div>
   <script>
     const vscode = acquireVsCodeApi();
     const map = L.map('map').setView([0, 0], 3);
@@ -290,34 +309,72 @@ export class MapPanel {
     });
     map.addControl(drawControl);
 
+    function geomToEE(geom) {
+      if (geom.type === 'Point')
+        return 'ee.Geometry.Point(' +
+          JSON.stringify(geom.coordinates) + ')';
+      if (geom.type === 'Polygon')
+        return 'ee.Geometry.Polygon(' +
+          JSON.stringify(geom.coordinates) + ')';
+      if (geom.type === 'LineString')
+        return 'ee.Geometry.LineString(' +
+          JSON.stringify(geom.coordinates) + ')';
+      return '';
+    }
+
+    function updateGeomToolbar() {
+      const count = drawnItems.getLayers().length;
+      const tb = document.getElementById('geomToolbar');
+      tb.style.display = count >= 2 ? 'block' : 'none';
+      tb.textContent =
+        'Copy ' + count + ' geometries as FeatureCollection';
+    }
+
+    function copyAllGeometries() {
+      const geoms = [];
+      drawnItems.eachLayer(function(layer) {
+        const geom = layer.toGeoJSON().geometry;
+        geoms.push(geomToEE(geom));
+      });
+      if (geoms.length === 0) return;
+      const code =
+        'ee.FeatureCollection([\\n' +
+        geoms.map(function(g) {
+          return '  ee.Feature(' + g + ')';
+        }).join(',\\n') +
+        '\\n])';
+      vscode.postMessage({
+        type: 'geometryCreated',
+        geojson: {
+          type: 'FeatureCollection',
+          features: drawnItems.toGeoJSON().features
+        },
+        eeCode: code
+      });
+    }
+
     map.on(L.Draw.Event.CREATED, function(event) {
       const layer = event.layer;
       drawnItems.addLayer(layer);
 
       const geojson = layer.toGeoJSON();
       const geom = geojson.geometry;
-
-      // Generate EE code snippet for the geometry.
-      let code = '';
-      if (geom.type === 'Point') {
-        code = 'ee.Geometry.Point(' +
-          JSON.stringify(geom.coordinates) + ')';
-      } else if (geom.type === 'Polygon') {
-        code = 'ee.Geometry.Polygon(' +
-          JSON.stringify(geom.coordinates) + ')';
-      } else if (geom.type === 'LineString') {
-        code = 'ee.Geometry.LineString(' +
-          JSON.stringify(geom.coordinates) + ')';
-      }
+      const code = geomToEE(geom);
 
       vscode.postMessage({
         type: 'geometryCreated',
         geojson: geom,
         eeCode: code
       });
+      updateGeomToolbar();
+    });
+
+    map.on(L.Draw.Event.DELETED, function() {
+      updateGeomToolbar();
     });
 
     updateLayerControl();
+    updateGeomToolbar();
   </script>
 </body>
 </html>`;
