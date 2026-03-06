@@ -10,6 +10,7 @@ import { EECompletionProvider } from './completion/eeCompletionProvider';
 import { EEAuth } from './ee/auth';
 import { EEState } from './ee/state';
 import { inspectPoint } from './ee/inspect';
+import { EEStatusBar } from './statusBar';
 
 export async function activate(
   context: vscode.ExtensionContext
@@ -86,6 +87,7 @@ export async function activate(
     vscode.commands.registerCommand(
       'eede.authenticate', async () => {
         await auth.authenticate();
+        statusBar.update();
         vscode.window.showInformationMessage(
           'Earth Engine: authenticated.'
         );
@@ -124,12 +126,17 @@ export async function activate(
     )
   );
 
+  // Status bar.
+  const statusBar = new EEStatusBar(auth);
+  context.subscriptions.push(statusBar);
+
   // Auto-authenticate on startup.
   auth.authenticate().then(
     () => {
       outputChannel.appendLine(
         'Earth Engine: authenticated'
       );
+      statusBar.update();
       assetProvider.refresh();
       taskProvider.refresh();
     },
@@ -137,6 +144,7 @@ export async function activate(
       outputChannel.appendLine(
         `Earth Engine: auth failed: ${err}`
       );
+      statusBar.update();
     }
   );
 
