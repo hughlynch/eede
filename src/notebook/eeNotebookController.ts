@@ -207,6 +207,7 @@ const ee = require('@google/earthengine');
 const prints = [];
 const layers = [];
 let mapCenter = null;
+let pendingLayers = 0;
 
 function print(...args) {
   const strs = args.map(a => {
@@ -220,17 +221,47 @@ function print(...args) {
   prints.push(strs.join(' '));
 }
 
+function emitResult() {
+  if (pendingLayers > 0) return;
+  console.log(JSON.stringify({
+    prints, layers, center: mapCenter
+  }));
+}
+
 const Map = {
   addLayer: function(eeObj, visParams, name) {
-    layers.push({
-      id: 'layer-' + Date.now() + '-' + layers.length,
-      name: name || 'Layer ' + layers.length,
+    const idx = layers.length;
+    const layer = {
+      id: 'layer-' + Date.now() + '-' + idx,
+      name: name || 'Layer ' + idx,
       visParams: visParams || {},
-      eeObject: 'serialized',
       visible: true,
       opacity: 1,
       tileUrl: ''
-    });
+    };
+    layers.push(layer);
+
+    // Get real tile URL via getMapId.
+    pendingLayers++;
+    try {
+      const vizImage = (eeObj.visualize)
+        ? eeObj.visualize(visParams || {})
+        : eeObj;
+      vizImage.getMapId({}, function(mapId) {
+        if (mapId && mapId.urlFormat) {
+          layer.tileUrl = mapId.urlFormat;
+        }
+        pendingLayers--;
+        emitResult();
+      }, function(err) {
+        prints.push('Map.addLayer warning: ' + err);
+        pendingLayers--;
+        emitResult();
+      });
+    } catch(e) {
+      prints.push('Map.addLayer warning: ' + e.message);
+      pendingLayers--;
+    }
   },
   setCenter: function(lng, lat, zoom) {
     mapCenter = { lng, lat, zoom: zoom || 10 };
@@ -252,9 +283,8 @@ ee.data.setAuthToken(null, 'Bearer', token, 3600, [],
       } catch(e) {
         prints.push('ERROR: ' + e.message);
       }
-      console.log(JSON.stringify({
-        prints, layers, center: mapCenter
-      }));
+      // If no async layers pending, emit now.
+      if (pendingLayers === 0) emitResult();
     }, (e) => {
       console.log(JSON.stringify({
         prints: ['EE init error: ' + e],
@@ -300,11 +330,24 @@ def print(*args, **kwargs):
 class MapShim:
     @staticmethod
     def addLayer(ee_obj, vis_params=None, name=None, *a):
+        tile_url = ''
+        try:
+            map_id = ee_obj.getMapId(vis_params or {})
+            tile_url = map_id.get('tile_fetcher', {}).getUrl() if hasattr(map_id.get('tile_fetcher', None), 'getUrl') else map_id.get('urlFormat', '')
+        except Exception as e:
+            try:
+                map_id = ee.data.getMapId({
+                    'image': ee_obj, **(vis_params or {})
+                })
+                tile_url = map_id.get('urlFormat', '')
+            except Exception as e2:
+                prints.append(f'Map.addLayer warning: {e2}')
         layers.append({
             'id': f'layer-{len(layers)}',
             'name': name or f'Layer {len(layers)}',
             'visible': True, 'opacity': 1,
-            'tileUrl': '', 'visParams': vis_params or {}
+            'tileUrl': tile_url,
+            'visParams': vis_params or {}
         })
     @staticmethod
     def setCenter(lng, lat, zoom=10):
