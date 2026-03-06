@@ -131,21 +131,27 @@ export class MapPanel {
     #map { width: 100vw; height: 100vh; }
     .layer-control {
       position: absolute; top: 10px; right: 10px;
-      z-index: 1000; background: var(--vscode-editor-background, #fff);
+      z-index: 1000;
+      background: var(--vscode-editor-background, #fff);
       color: var(--vscode-editor-foreground, #000);
+      border: 1px solid var(--vscode-widget-border, #ccc);
       border-radius: 4px; padding: 8px; font-size: 12px;
       font-family: var(--vscode-font-family, sans-serif);
       max-height: 300px; overflow-y: auto;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     }
     .layer-item { display: flex; align-items: center;
       gap: 6px; padding: 2px 0; }
     .layer-item input { margin: 0; }
     .coords {
       position: absolute; bottom: 4px; left: 10px;
-      z-index: 1000; background: rgba(0,0,0,0.6);
-      color: #fff; padding: 2px 8px; border-radius: 3px;
+      z-index: 1000;
+      background: var(--vscode-editor-background, #000);
+      color: var(--vscode-editor-foreground, #fff);
+      border: 1px solid var(--vscode-widget-border, #555);
+      padding: 2px 8px; border-radius: 3px;
       font-size: 11px; font-family: monospace;
+      opacity: 0.9;
     }
   </style>
 </head>
@@ -157,11 +163,45 @@ export class MapPanel {
     const vscode = acquireVsCodeApi();
     const map = L.map('map').setView([0, 0], 3);
 
-    L.tileLayer(
-      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      { attribution: '© OpenStreetMap contributors',
+    // Theme-aware basemap: detect dark vs light.
+    const isDark = document.body.classList.contains(
+      'vscode-dark') ||
+      document.body.getAttribute('data-vscode-theme-kind')
+        === 'vscode-dark';
+
+    const lightTiles =
+      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+    const darkTiles =
+      'https://{s}.basemaps.cartocdn.com/' +
+      'dark_all/{z}/{x}/{y}{r}.png';
+
+    let basemap = L.tileLayer(
+      isDark ? darkTiles : lightTiles,
+      { attribution: '© OpenStreetMap contributors' +
+          (isDark ? ' © CARTO' : ''),
         maxZoom: 19 }
     ).addTo(map);
+
+    // Watch for theme changes.
+    const observer = new MutationObserver(() => {
+      const nowDark = document.body.classList.contains(
+        'vscode-dark') ||
+        document.body.getAttribute(
+          'data-vscode-theme-kind') === 'vscode-dark';
+      const url = nowDark ? darkTiles : lightTiles;
+      if (basemap._url !== url) {
+        map.removeLayer(basemap);
+        basemap = L.tileLayer(url, {
+          attribution: '© OpenStreetMap contributors' +
+            (nowDark ? ' © CARTO' : ''),
+          maxZoom: 19
+        }).addTo(map);
+      }
+    });
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ['class', 'data-vscode-theme-kind']
+    });
 
     const eeLayers = {};
 

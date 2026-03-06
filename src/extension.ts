@@ -136,6 +136,33 @@ export async function activate(
           context.extensionUri, eeState
         );
       }
+    ),
+    vscode.commands.registerCommand(
+      'eede.toggleCellLanguage', async () => {
+        const editor =
+          vscode.window.activeNotebookEditor;
+        if (!editor) return;
+        const idx =
+          editor.selections[0]?.start ?? 0;
+        const cell =
+          editor.notebook.cellAt(idx);
+        if (!cell) return;
+        const newLang =
+          cell.document.languageId === 'javascript'
+            ? 'python'
+            : 'javascript';
+        await vscode.languages
+          .setTextDocumentLanguage(
+            cell.document, newLang
+          );
+      }
+    ),
+    vscode.commands.registerCommand(
+      'eede.clearCellOutput', () => {
+        vscode.commands.executeCommand(
+          'notebook.cell.clearOutputs'
+        );
+      }
     )
   );
 

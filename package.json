@@ -90,6 +90,18 @@
         "title": "Toggle Map Panel",
         "icon": "$(globe)",
         "category": "Earth Engine"
+      },
+      {
+        "command": "eede.toggleCellLanguage",
+        "title": "Toggle Cell Language (JS/Python)",
+        "icon": "$(symbol-language)",
+        "category": "Earth Engine"
+      },
+      {
+        "command": "eede.clearCellOutput",
+        "title": "Clear Cell Output",
+        "icon": "$(clear-all)",
+        "category": "Earth Engine"
       }
     ],
     "keybindings": [
@@ -146,6 +158,18 @@
         {
           "command": "eede.cancelTask",
           "when": "view == eede.tasks && viewItem == running"
+        }
+      ],
+      "notebook/cell/title": [
+        {
+          "command": "eede.toggleCellLanguage",
+          "when": "notebookType == eede-notebook",
+          "group": "inline@1"
+        },
+        {
+          "command": "eede.clearCellOutput",
+          "when": "notebookType == eede-notebook",
+          "group": "inline@2"
         }
       ]
     },
