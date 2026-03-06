@@ -6,7 +6,7 @@ Design rationale, decisions, and session history for eede —
 the Earth Engine Development Environment VS Code extension.
 
 Last Updated: 2026-03-06
-Sessions: 1 (3 milestones)
+Sessions: 1 (4 milestones)
 
 ---
 
@@ -123,25 +123,48 @@ Completed iterations 10-14:
 - 16 commits total
 - Clean compilation, zero warnings
 
+### Milestone 4 — Polish + Performance
+
+Completed iterations 15-16:
+- Code Editor script importer (split on separators, gaps,
+  comment-to-markdown conversion, 5 new tests)
+- Keyboard shortcuts (Ctrl+Shift+M/I/N)
+- Async cell execution (spawn + temp files, no more execSync)
+- Parser extracted to standalone module for testing
+- 11 total tests, all passing
+
+### Commits (continued)
+
+14. `5525b25` — Code Editor importer + keybindings
+15. `5415ca0` — Async cell execution
+
+### Final Stats
+
+- 25 TypeScript source files
+- ~3,500 lines of code
+- 11 unit tests passing
+- 21 commits total
+- Clean compilation, zero warnings
+
 ### Next Steps
 
-1. **Deploy to eede.abwp.ai.** Run deploy.sh, set up
-   domain mapping, configure OAuth client.
+1. **Deploy to eede.abwp.ai.** Run deploy.sh, configure
+   OAuth client, set up domain mapping.
 
 2. **Extension test harness.** @vscode/test-electron for
-   serializer + completion tests in extension host.
+   tests that need the extension host.
 
 3. **Notebook cell toolbar.** Quick actions: toggle language,
-   run cell, clear output, add layer to map.
+   run cell, clear output.
 
-4. **Code Editor script importer.** One-click import of
-   Code Editor scripts (parse and convert to .eede cells).
+4. **Dark/light theme integration.** Map and inspector panels
+   should respect VS Code theme.
 
-5. **Keyboard shortcuts.** Ctrl+Enter to run cell, Shift+Enter
-   to run and advance, Ctrl+Shift+M to toggle map.
+5. **Cell output caching.** Cache getMapId tile URLs to avoid
+   re-requesting on notebook reload.
 
-6. **Dark/light theme integration.** Map and inspector panels
-   should respect VS Code theme colors.
+6. **Multi-cursor geometry selection.** Select multiple drawn
+   geometries and generate ee.FeatureCollection code.
 
-7. **Performance.** Cell execution is synchronous (execSync).
-   Move to async child processes with streaming output.
+7. **Marketplace publishing.** Package and publish to VS Code
+   marketplace as preview.
