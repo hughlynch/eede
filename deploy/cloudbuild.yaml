@@ -1,0 +1,67 @@
+# Cloud Build config for deploying eede to Cloud Run.
+# Triggered on push to main.
+#
+# Prerequisites:
+#   - Enable Cloud Run, Artifact Registry, Cloud Build APIs
+#   - Create Artifact Registry repo: eede
+#   - Set up domain mapping: eede.abwp.ai -> Cloud Run service
+#
+# Manual deploy:
+#   gcloud builds submit --config deploy/cloudbuild.yaml .
+
+steps:
+  # Build the Docker image.
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/eede:${SHORT_SHA}'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/eede:latest'
+      - '-f'
+      - 'deploy/Dockerfile.cloudrun'
+      - '.'
+
+  # Push to Artifact Registry.
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '--all-tags'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/eede'
+
+  # Deploy to Cloud Run.
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'eede'
+      - '--image'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/eede:${SHORT_SHA}'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--port'
+      - '8080'
+      - '--memory'
+      - '2Gi'
+      - '--cpu'
+      - '2'
+      - '--min-instances'
+      - '0'
+      - '--max-instances'
+      - '10'
+      - '--timeout'
+      - '3600'
+      - '--set-env-vars'
+      - 'EEDE_OAUTH_CLIENT_ID=${_OAUTH_CLIENT_ID}'
+
+substitutions:
+  _REGION: us-central1
+  _REPO: eede
+  _OAUTH_CLIENT_ID: ''
+
+options:
+  logging: CLOUD_LOGGING_ONLY
