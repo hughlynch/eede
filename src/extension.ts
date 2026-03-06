@@ -9,6 +9,7 @@ import { LayerManagerProvider } from './views/layerManager';
 import { EECompletionProvider } from './completion/eeCompletionProvider';
 import { EEAuth } from './ee/auth';
 import { EEState } from './ee/state';
+import { inspectPoint } from './ee/inspect';
 
 export async function activate(
   context: vscode.ExtensionContext
@@ -100,6 +101,15 @@ export async function activate(
             'eede-notebook', data
           );
         await vscode.window.showNotebookDocument(doc);
+      }
+    ),
+    vscode.commands.registerCommand(
+      'eede.inspectPoint',
+      async (lat: number, lng: number) => {
+        const results = await inspectPoint(
+          lat, lng, eeState, auth
+        );
+        InspectorPanel.sendResults(results);
       }
     ),
     vscode.commands.registerCommand(

@@ -7,6 +7,22 @@ export class InspectorPanel {
   private readonly _panel: vscode.WebviewPanel;
   private _disposables: vscode.Disposable[] = [];
 
+  static sendResults(
+    results: Array<{
+      layerName: string;
+      values: Record<string, unknown>;
+    }>
+  ) {
+    if (InspectorPanel._current) {
+      InspectorPanel._current._panel.webview.postMessage(
+        {
+          type: 'inspectResult',
+          results,
+        }
+      );
+    }
+  }
+
   static createOrShow(
     extensionUri: vscode.Uri,
     state: EEState,

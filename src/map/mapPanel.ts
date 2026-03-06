@@ -63,10 +63,15 @@ export class MapPanel {
 
     // Handle messages from the webview.
     this._panel.webview.onDidReceiveMessage(
-      (msg) => {
+      async (msg) => {
         if (msg.type === 'inspectPoint') {
-          vscode.commands.executeCommand(
+          await vscode.commands.executeCommand(
             'eede.openInspector'
+          );
+          await vscode.commands.executeCommand(
+            'eede.inspectPoint',
+            msg.lat,
+            msg.lng
           );
         }
       },

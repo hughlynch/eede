@@ -1,6 +1,15 @@
 import * as vscode from 'vscode';
 import { EEState, MapLayer } from '../ee/state';
 import { EEAuth } from '../ee/auth';
+import {
+  SerializedVar,
+  extractJSVarNames,
+  extractPyVarNames,
+  jsDeserializeVars,
+  jsSerializeVars,
+  pyDeserializeVars,
+  pySerializeVars,
+} from './variableBridge';
 
 // The notebook controller executes JS and Python cells
 // against the Earth Engine API. JS runs via a child
@@ -13,6 +22,7 @@ export class EENotebookController
 {
   private readonly _controller: vscode.NotebookController;
   private _executionOrder = 0;
+  private _bridgeVars: SerializedVar[] = [];
 
   constructor(
     private readonly _state: EEState,
@@ -93,21 +103,43 @@ export class EENotebookController
   ): Promise<void> {
     const { execSync } = await import('child_process');
 
-    // Build a Node.js script that runs the cell with
-    // the EE API and a Map/print shim.
-    const script = this._buildJSRunner(source);
+    // Inject bridged variables + serialize after.
+    const varNames = extractJSVarNames(source);
+    const preamble =
+      jsDeserializeVars(this._bridgeVars);
+    const postamble = jsSerializeVars(varNames);
+    const script = this._buildJSRunner(
+      preamble + '\n' + source + '\n' + postamble
+    );
 
-    const result = execSync(`node -e ${escapeShell(script)}`, {
-      encoding: 'utf-8',
-      timeout: 60000,
-      env: {
-        ...process.env,
-        EE_TOKEN: this._auth.token || '',
-        EE_PROJECT: this._auth.projectId || '',
-      },
-    });
+    const result = execSync(
+      `node -e ${escapeShell(script)}`,
+      {
+        encoding: 'utf-8',
+        timeout: 60000,
+        env: {
+          ...process.env,
+          EE_TOKEN: this._auth.token || '',
+          EE_PROJECT: this._auth.projectId || '',
+        },
+      }
+    );
 
     const parsed = this._parseRunnerOutput(result);
+
+    // Capture bridged variables.
+    if (parsed.bridgeVars) {
+      for (const v of parsed.bridgeVars) {
+        const idx = this._bridgeVars.findIndex(
+          (bv) => bv.name === v.name
+        );
+        if (idx >= 0) {
+          this._bridgeVars[idx] = v;
+        } else {
+          this._bridgeVars.push(v);
+        }
+      }
+    }
 
     const outputs: vscode.NotebookCellOutput[] = [];
 
@@ -156,8 +188,14 @@ export class EENotebookController
       'python3'
     );
 
-    // Build a Python script with EE init and Map shim.
-    const script = this._buildPythonRunner(source);
+    // Inject bridged variables + serialize after.
+    const varNames = extractPyVarNames(source);
+    const preamble =
+      pyDeserializeVars(this._bridgeVars);
+    const postamble = pySerializeVars(varNames);
+    const augmented =
+      preamble + '\n' + source + '\n' + postamble;
+    const script = this._buildPythonRunner(augmented);
 
     const result = execSync(
       `${pythonPath} -c ${escapeShell(script)}`,
@@ -173,6 +211,20 @@ export class EENotebookController
     );
 
     const parsed = this._parseRunnerOutput(result);
+
+    // Capture bridged variables.
+    if (parsed.bridgeVars) {
+      for (const v of parsed.bridgeVars) {
+        const idx = this._bridgeVars.findIndex(
+          (bv) => bv.name === v.name
+        );
+        if (idx >= 0) {
+          this._bridgeVars[idx] = v;
+        } else {
+          this._bridgeVars.push(v);
+        }
+      }
+    }
 
     const outputs: vscode.NotebookCellOutput[] = [];
 
@@ -224,7 +276,9 @@ function print(...args) {
 function emitResult() {
   if (pendingLayers > 0) return;
   console.log(JSON.stringify({
-    prints, layers, center: mapCenter
+    prints, layers, center: mapCenter,
+    bridgeVars: typeof __bridge_vars !== 'undefined'
+      ? __bridge_vars : []
   }));
 }
 
@@ -439,7 +493,8 @@ except Exception as e:
 
 _orig_print(json.dumps({
     'prints': prints, 'layers': layers,
-    'center': map_center
+    'center': map_center,
+    'bridgeVars': __bridge_vars if '__bridge_vars' in dir() else []
 }))
 `;
   }
@@ -452,6 +507,7 @@ _orig_print(json.dumps({
       lat: number;
       zoom: number;
     } | null;
+    bridgeVars?: SerializedVar[];
   } {
     try {
       // Find the last JSON line in stdout.
