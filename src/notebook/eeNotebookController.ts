@@ -57,12 +57,26 @@ export class EENotebookController
 
   private async _executeAll(
     cells: vscode.NotebookCell[],
-    _notebook: vscode.NotebookDocument,
+    notebook: vscode.NotebookDocument,
     _ctrl: vscode.NotebookController
   ) {
     for (const cell of cells) {
       await this._executeCell(cell);
     }
+
+    // Persist bridge vars and layers to notebook
+    // metadata for caching across sessions.
+    const edit = new vscode.WorkspaceEdit();
+    const meta = {
+      ...(notebook.metadata || {}),
+      bridgeState: this._bridgeVars,
+      layers: this._state.layers,
+      mapCenter: this._state.center,
+    };
+    edit.set(notebook.uri, [
+      vscode.NotebookEdit.updateNotebookMetadata(meta),
+    ]);
+    await vscode.workspace.applyEdit(edit);
   }
 
   private async _executeCell(

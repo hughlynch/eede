@@ -166,6 +166,36 @@ export async function activate(
     )
   );
 
+  // Restore cached layers when an eede notebook opens.
+  context.subscriptions.push(
+    vscode.workspace.onDidOpenNotebookDocument((nb) => {
+      if (nb.notebookType !== 'eede-notebook') return;
+      const meta = nb.metadata as
+        Record<string, unknown> | undefined;
+      if (!meta) return;
+      const layers = meta.layers as
+        Array<{
+          id: string; name: string;
+          tileUrl: string; visible: boolean;
+          opacity: number;
+          visParams: Record<string, unknown>;
+        }> | undefined;
+      if (layers) {
+        for (const l of layers) {
+          eeState.addLayer(l);
+        }
+      }
+      const center = meta.mapCenter as
+        { lng: number; lat: number; zoom: number }
+        | undefined;
+      if (center) {
+        eeState.setCenter(
+          center.lng, center.lat, center.zoom
+        );
+      }
+    })
+  );
+
   // Status bar.
   const statusBar = new EEStatusBar(auth);
   context.subscriptions.push(statusBar);

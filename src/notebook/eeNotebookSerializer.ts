@@ -13,11 +13,21 @@ interface RawOutput {
   data: string;
 }
 
+interface RawLayer {
+  id: string;
+  name: string;
+  tileUrl: string;
+  visParams: Record<string, unknown>;
+  visible: boolean;
+  opacity: number;
+}
+
 interface RawNotebook {
   version: 1;
   cells: RawCell[];
   bridgeState?: SerializedVar[];
   mapCenter?: { lng: number; lat: number; zoom: number };
+  layers?: RawLayer[];
 }
 
 export class EENotebookSerializer
@@ -43,6 +53,9 @@ export class EENotebookSerializer
     }
     if (raw.mapCenter) {
       metadata.mapCenter = raw.mapCenter;
+    }
+    if (raw.layers) {
+      metadata.layers = raw.layers;
     }
 
     const cells = raw.cells.map((cell) => {
@@ -120,6 +133,9 @@ export class EENotebookSerializer
         lat: number;
         zoom: number;
       };
+    }
+    if (meta?.layers) {
+      raw.layers = meta.layers as RawLayer[];
     }
 
     return new TextEncoder().encode(
