@@ -73,6 +73,20 @@ export class MapPanel {
             msg.lat,
             msg.lng
           );
+        } else if (msg.type === 'geometryCreated') {
+          if (msg.eeCode) {
+            await vscode.env.clipboard.writeText(
+              msg.eeCode
+            );
+            vscode.window.showInformationMessage(
+              'Geometry copied to clipboard as EE code.'
+            );
+          }
+          // Store in state for cell access.
+          state.setVariable(
+            '_lastGeometry',
+            msg.geojson
+          );
         }
       },
       null,
@@ -104,8 +118,13 @@ export class MapPanel {
   <title>Earth Engine Map</title>
   <link rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet"
+    href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
   <script
     src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+  </script>
+  <script
+    src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js">
   </script>
   <style>
     body { margin: 0; padding: 0; overflow: hidden; }
@@ -212,6 +231,50 @@ export class MapPanel {
       } else if (msg.type === 'setCenter') {
         map.setView([msg.lat, msg.lng], msg.zoom);
       }
+    });
+
+    // Drawing tools.
+    const drawnItems = new L.FeatureGroup();
+    map.addLayer(drawnItems);
+
+    const drawControl = new L.Control.Draw({
+      edit: { featureGroup: drawnItems },
+      draw: {
+        polygon: true,
+        polyline: false,
+        rectangle: true,
+        circle: false,
+        circlemarker: false,
+        marker: true
+      }
+    });
+    map.addControl(drawControl);
+
+    map.on(L.Draw.Event.CREATED, function(event) {
+      const layer = event.layer;
+      drawnItems.addLayer(layer);
+
+      const geojson = layer.toGeoJSON();
+      const geom = geojson.geometry;
+
+      // Generate EE code snippet for the geometry.
+      let code = '';
+      if (geom.type === 'Point') {
+        code = 'ee.Geometry.Point(' +
+          JSON.stringify(geom.coordinates) + ')';
+      } else if (geom.type === 'Polygon') {
+        code = 'ee.Geometry.Polygon(' +
+          JSON.stringify(geom.coordinates) + ')';
+      } else if (geom.type === 'LineString') {
+        code = 'ee.Geometry.LineString(' +
+          JSON.stringify(geom.coordinates) + ')';
+      }
+
+      vscode.postMessage({
+        type: 'geometryCreated',
+        geojson: geom,
+        eeCode: code
+      });
     });
 
     updateLayerControl();
