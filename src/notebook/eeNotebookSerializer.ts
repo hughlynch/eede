@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { SerializedVar } from './variableBridge';
 
 interface RawCell {
   language: string;
@@ -15,6 +16,8 @@ interface RawOutput {
 interface RawNotebook {
   version: 1;
   cells: RawCell[];
+  bridgeState?: SerializedVar[];
+  mapCenter?: { lng: number; lat: number; zoom: number };
 }
 
 export class EENotebookSerializer
@@ -32,6 +35,14 @@ export class EENotebookSerializer
     } catch {
       // Empty or invalid file — start with one JS cell.
       return this.createEmptyNotebook();
+    }
+
+    const metadata: Record<string, unknown> = {};
+    if (raw.bridgeState) {
+      metadata.bridgeState = raw.bridgeState;
+    }
+    if (raw.mapCenter) {
+      metadata.mapCenter = raw.mapCenter;
     }
 
     const cells = raw.cells.map((cell) => {
@@ -61,14 +72,16 @@ export class EENotebookSerializer
       return cellData;
     });
 
-    return new vscode.NotebookData(cells);
+    const notebookData = new vscode.NotebookData(cells);
+    notebookData.metadata = metadata;
+    return notebookData;
   }
 
   serializeNotebook(
     data: vscode.NotebookData,
     _token: vscode.CancellationToken
   ): Uint8Array {
-    const raw: RawNotebook = {
+    const raw: RawNotebook & Record<string, unknown> = {
       version: 1,
       cells: data.cells.map((cell) => {
         const rawCell: RawCell = {
@@ -93,6 +106,21 @@ export class EENotebookSerializer
         return rawCell;
       }),
     };
+
+    // Persist bridge state and map center if available.
+    const meta = data.metadata as
+      Record<string, unknown> | undefined;
+    if (meta?.bridgeState) {
+      raw.bridgeState =
+        meta.bridgeState as SerializedVar[];
+    }
+    if (meta?.mapCenter) {
+      raw.mapCenter = meta.mapCenter as {
+        lng: number;
+        lat: number;
+        zoom: number;
+      };
+    }
 
     return new TextEncoder().encode(
       JSON.stringify(raw, null, 2) + '\n'
