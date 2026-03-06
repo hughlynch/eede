@@ -271,6 +271,44 @@ const Map = {
   }
 };
 
+const Export = {
+  image: {
+    toDrive: function(params) {
+      const task = ee.batch.Export.image.toDrive(params);
+      task.start();
+      prints.push('Export started: ' +
+        (params.description || 'image export'));
+    },
+    toAsset: function(params) {
+      const task = ee.batch.Export.image.toAsset(params);
+      task.start();
+      prints.push('Export started: ' +
+        (params.description || 'image to asset'));
+    },
+    toCloudStorage: function(params) {
+      const task =
+        ee.batch.Export.image.toCloudStorage(params);
+      task.start();
+      prints.push('Export started: ' +
+        (params.description || 'image to GCS'));
+    }
+  },
+  table: {
+    toDrive: function(params) {
+      const task = ee.batch.Export.table.toDrive(params);
+      task.start();
+      prints.push('Export started: ' +
+        (params.description || 'table export'));
+    },
+    toAsset: function(params) {
+      const task = ee.batch.Export.table.toAsset(params);
+      task.start();
+      prints.push('Export started: ' +
+        (params.description || 'table to asset'));
+    }
+  }
+};
+
 const token = process.env.EE_TOKEN;
 const project = process.env.EE_PROJECT;
 
@@ -372,6 +410,27 @@ try:
     ee.Initialize(credentials=creds, project=project or None)
 except Exception as e:
     prints.append(f'EE init error: {e}')
+
+class ExportShim:
+    class image:
+        @staticmethod
+        def toDrive(image, **kwargs):
+            task = ee.batch.Export.image.toDrive(image=image, **kwargs)
+            task.start()
+            prints.append(f"Export started: {kwargs.get('description', 'image export')}")
+        @staticmethod
+        def toAsset(image, **kwargs):
+            task = ee.batch.Export.image.toAsset(image=image, **kwargs)
+            task.start()
+            prints.append(f"Export started: {kwargs.get('description', 'image to asset')}")
+    class table:
+        @staticmethod
+        def toDrive(collection, **kwargs):
+            task = ee.batch.Export.table.toDrive(collection=collection, **kwargs)
+            task.start()
+            prints.append(f"Export started: {kwargs.get('description', 'table export')}")
+
+Export = ExportShim()
 
 try:
     exec(compile('${escaped}', '<cell>', 'exec'))
