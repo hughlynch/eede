@@ -6,7 +6,7 @@ Design rationale, decisions, and session history for eede —
 the Earth Engine Development Environment VS Code extension.
 
 Last Updated: 2026-03-06
-Sessions: 1 (4 milestones)
+Sessions: 2 (5 milestones)
 
 ---
 
@@ -138,12 +138,32 @@ Completed iterations 15-16:
 14. `5525b25` — Code Editor importer + keybindings
 15. `5415ca0` — Async cell execution
 
-### Final Stats
+### Milestone 5 — Polish + UX
+
+Completed iterations 17-20:
+- Notebook cell toolbar: toggle language (JS↔Python) and
+  clear output buttons in cell title bar
+- Dark/light theme: map basemap auto-switches between OSM
+  (light) and CartoDB dark_all (dark), MutationObserver for
+  live theme changes, all chrome uses VS Code CSS variables
+- Layer caching: tile URLs + bridge vars + map center persisted
+  in .eede metadata, restored on notebook reopen without
+  re-execution
+- Multi-geometry: "Copy All as FeatureCollection" toolbar
+  appears when 2+ geometries drawn, generates ee code
+
+### Commits (continued)
+
+16. `506da17` — Cell toolbar + dark/light theme
+17. `d10e309` — Layer caching in notebook metadata
+18. `c02b2fd` — Multi-geometry FeatureCollection export
+
+### Stats
 
 - 25 TypeScript source files
-- ~3,500 lines of code
+- ~3,630 lines of code
 - 11 unit tests passing
-- 21 commits total
+- 24 commits total
 - Clean compilation, zero warnings
 
 ### Next Steps
@@ -154,17 +174,11 @@ Completed iterations 15-16:
 2. **Extension test harness.** @vscode/test-electron for
    tests that need the extension host.
 
-3. **Notebook cell toolbar.** Quick actions: toggle language,
-   run cell, clear output.
-
-4. **Dark/light theme integration.** Map and inspector panels
-   should respect VS Code theme.
-
-5. **Cell output caching.** Cache getMapId tile URLs to avoid
-   re-requesting on notebook reload.
-
-6. **Multi-cursor geometry selection.** Select multiple drawn
-   geometries and generate ee.FeatureCollection code.
-
-7. **Marketplace publishing.** Package and publish to VS Code
+3. **Marketplace publishing.** Package and publish to VS Code
    marketplace as preview.
+
+4. **Cell interruption.** Cancel running cell execution via
+   kill signal to child process.
+
+5. **Inline variable preview.** Hover over ee variable to
+   see getInfo() result in tooltip.
