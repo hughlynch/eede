@@ -168,17 +168,33 @@ Completed iterations 17-20:
 
 ### Next Steps
 
-1. **Deploy to eede.abwp.ai.** Run deploy.sh, configure
-   OAuth client, set up domain mapping.
+### Milestone 6 — Deploy + Geeni Integration
 
-2. **Extension test harness.** @vscode/test-electron for
+- Deployed to eede.abwp.ai via Cloud Build + Cloud Run
+- Entrypoint proxy: Node.js sits in front of code-server,
+  handles ?code=<base64>&lang=<js|python> to create notebooks
+  from external links
+- Geeni chat: "Open in eede" button on EE code blocks,
+  links to eede.abwp.ai with base64-encoded code
+- Geeni gateway: eede.abwp.ai added to CORS origins
+
+### Commits (continued)
+
+19. `80d9f4d` — Entrypoint proxy for geeni→eede handoff
+20. (geeni) `234dd74` — Open in eede button + CORS
+
+### Next Steps
+
+1. **Domain mapping.** `eede.abwp.ai` → Cloud Run service.
+
+2. **Geeni as eede sidebar.** Embed geeni chat as a VS Code
+   webview panel for inline EE expert assistance.
+
+3. **Extension test harness.** @vscode/test-electron for
    tests that need the extension host.
-
-3. **Marketplace publishing.** Package and publish to VS Code
-   marketplace as preview.
 
 4. **Cell interruption.** Cancel running cell execution via
    kill signal to child process.
 
-5. **Inline variable preview.** Hover over ee variable to
-   see getInfo() result in tooltip.
+5. **Marketplace publishing.** Package and publish to VS Code
+   marketplace as preview.

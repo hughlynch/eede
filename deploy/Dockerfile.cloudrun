@@ -9,15 +9,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl gnupg \
     && rm -rf /var/lib/apt/lists/*
 
-# Install gcloud CLI.
-RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.asc] \
-    https://packages.cloud.google.com/apt cloud-sdk main" \
-    > /etc/apt/sources.list.d/google-cloud-sdk.list \
-    && curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg \
-    | gpg --dearmor -o /usr/share/keyrings/cloud.google.asc \
-    && apt-get update \
-    && apt-get install -y google-cloud-cli \
-    && rm -rf /var/lib/apt/lists/*
+# Install gcloud CLI via standalone archive (avoids apt key issues).
+RUN curl -fsSL https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-linux-x86_64.tar.gz \
+    | tar -xz -C /opt \
+    && /opt/google-cloud-sdk/install.sh --quiet \
+    && ln -s /opt/google-cloud-sdk/bin/gcloud /usr/local/bin/gcloud \
+    && ln -s /opt/google-cloud-sdk/bin/gsutil /usr/local/bin/gsutil
 
 # Install EE Python package.
 RUN pip3 install --break-system-packages earthengine-api
