@@ -6,7 +6,7 @@ Design rationale, decisions, and session history for eede —
 the Earth Engine Development Environment VS Code extension.
 
 Last Updated: 2026-03-06
-Sessions: 1 (2 milestones)
+Sessions: 1 (3 milestones)
 
 ---
 
@@ -98,26 +98,50 @@ Completed iterations 6-9:
 8. `790da4e` — Map drawing tools
 9. `3f93c47` — Unit tests
 
+### Milestone 3 — Full Feature Set + Deploy Config
+
+Completed iterations 10-14:
+- Dynamic EE catalog search (STAC API, 1h cache, 20 fallbacks)
+- Cloud Run deployment (Dockerfile, cloudbuild.yaml, deploy.sh)
+- Error diagnostics (line mapping, severity, EE error codes)
+- Persistent cell state (bridge vars + map center in .eede file)
+- SVG chart renderer (ui.Chart shim, line/scatter/bar/histogram)
+- CLAUDE.md project conventions
+
+### Commits (continued)
+
+10. `a0a7f15` — Dynamic catalog search for autocomplete
+11. `4fc0839` — Cloud Run deployment config
+12. `7a58bac` — Error diagnostics + persistent state
+13. `ab6324a` — CLAUDE.md
+
+### Stats
+
+- 21 TypeScript source files
+- ~3,400 lines of code
+- 6 unit tests passing
+- 16 commits total
+- Clean compilation, zero warnings
+
 ### Next Steps
 
-1. **Chart support.** `ui.Chart` shim that renders in notebook
-   cell output via VS Code's notebook renderer API.
+1. **Deploy to eede.abwp.ai.** Run deploy.sh, set up
+   domain mapping, configure OAuth client.
 
-2. **EE dataset search in autocomplete.** Dynamic catalog API
-   query instead of hardcoded popular datasets.
+2. **Extension test harness.** @vscode/test-electron for
+   serializer + completion tests in extension host.
 
-3. **Persistent cell state.** Variable bridge state should
-   survive notebook save/reload — serialize bridge vars into
-   the .eede file.
-
-4. **Error diagnostics.** Show EE API errors inline in cells
-   with proper error highlighting.
-
-5. **Cloud Run deployment config.** Production Docker setup
-   for hosting on Cloud Run behind abwp.ai domain.
-
-6. **Extension test harness.** Set up @vscode/test-electron
-   to run serializer + completion tests in extension host.
-
-7. **Notebook cell toolbar.** Quick actions: toggle language,
+3. **Notebook cell toolbar.** Quick actions: toggle language,
    run cell, clear output, add layer to map.
+
+4. **Code Editor script importer.** One-click import of
+   Code Editor scripts (parse and convert to .eede cells).
+
+5. **Keyboard shortcuts.** Ctrl+Enter to run cell, Shift+Enter
+   to run and advance, Ctrl+Shift+M to toggle map.
+
+6. **Dark/light theme integration.** Map and inspector panels
+   should respect VS Code theme colors.
+
+7. **Performance.** Cell execution is synchronous (execSync).
+   Move to async child processes with streaming output.
