@@ -1,0 +1,198 @@
+<html><head><title>eede: An Open Source Earth Engine Development Environment</title></head>
+<body style="font-family: Georgia, serif; max-width: 800px; margin: 0 auto; line-height: 1.6; color: #333; padding: 20px;">
+
+<h1 style="color: #1a5276; border-bottom: 2px solid #1a5276; padding-bottom: 10px;">eede: An Open Source Earth Engine Development Environment</h1>
+<p style="font-style: italic; color: #666; font-size: 1.1em;">A vision for modern EE tooling, built by and for the community.</p>
+
+<p><strong>GitHub repo:</strong> <a href="https://github.com/hughlynch/eede">github.com/hughlynch/eede</a></p>
+
+<h2 style="color: #1a5276;">The Opportunity</h2>
+
+<p>Google Earth Engine has ~500,000 registered developers and powers critical work in climate science, agriculture, forestry, disaster response, and urban planning. The Code Editor — the primary IDE for EE development — was groundbreaking when it launched over a decade ago. But it hasn't kept pace with modern development practices, and the community feels it.</p>
+
+<p><strong>Common frustrations from the EE community:</strong></p>
+<ul>
+<li><strong>No version control integration.</strong> Scripts live in a proprietary file system with no git support.</li>
+<li><strong>No debugging.</strong> <code>print()</code> is the only debugging tool. No breakpoints, no variable inspection, no step-through.</li>
+<li><strong>JavaScript only in the IDE.</strong> The Python API is growing fast (especially for ML/AI workflows), but has no equivalent IDE experience.</li>
+<li><strong>No cells or notebooks.</strong> Every script is a monolithic block. No way to run sections independently.</li>
+<li><strong>Batch system limitations.</strong> Export tasks are fire-and-forget with poor monitoring, no dependency chains, and no retry logic.</li>
+<li><strong>No extensibility.</strong> Can't add custom panels, tools, or integrations. The UI is frozen in 2015.</li>
+<li><strong>Vendor lock-in concerns.</strong> Scripts, assets, and workflows are tightly coupled to Google infrastructure.</li>
+</ul>
+
+<p>Meanwhile, the <strong>EE JavaScript API is fully open source</strong> (<code>@google/earthengine</code> on npm, <code>google/earthengine-api</code> on GitHub) and works perfectly as a standalone browser library. The API does all the heavy lifting — the Code Editor is "just" the IDE around it. This means building a better one is not only possible, it's practical.</p>
+
+<h2 style="color: #1a5276;">What eede Is</h2>
+
+<p>eede (pronounced "Edie") is a modern, open source development environment for Earth Engine. It's not a clone of the Code Editor — it's what comes next.</p>
+
+<h3>Core Principles</h3>
+<ol>
+<li><strong>Dual-language from day one.</strong> JavaScript and Python side by side, in the same notebook. EE's serialization format means computations defined in either language produce identical server-side execution plans.</li>
+<li><strong>Cell-based notebooks.</strong> Like Jupyter, but purpose-built for geospatial. Each cell can be JS or Python. Map layers persist across cells.</li>
+<li><strong>Real map rendering.</strong> A full Leaflet/Deck.gl map with EE tile layers, drawing tools, inspector, and layer management.</li>
+<li><strong>Modern editing.</strong> Monaco editor (the engine behind VS Code) with EE-aware autocomplete and inline documentation.</li>
+<li><strong>Open and extensible.</strong> Plugin architecture for custom panels, tools, data sources, and export targets.</li>
+</ol>
+
+<h2 style="color: #1a5276;">Architecture</h2>
+
+<pre style="background: #f4f4f4; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 0.85em; overflow-x: auto;">
++--------------------------------------------------+
+|                    eede UI                        |
+|  +-------------+  +----------+  +-------------+  |
+|  | Monaco       |  | Map      |  | Inspector   |  |
+|  | Editor       |  | (Leaflet |  | Panel       |  |
+|  | (cells)      |  |  /Deck)  |  |             |  |
+|  +-------------+  +----------+  +-------------+  |
+|  +-------------+  +----------+  +-------------+  |
+|  | Console      |  | Layer    |  | Asset       |  |
+|  | Output       |  | Manager  |  | Browser     |  |
+|  +-------------+  +----------+  +-------------+  |
++--------------------------------------------------+
+         |                |               |
+    +---------+     +-----------+   +-----------+
+    | Cell    |     | Map       |   | Extension |
+    | Runtime |     | Engine    |   | Framework |
+    +---------+     +-----------+   +-----------+
+         |                |
+    +---------+     +-----------+
+    | EE JS   |     | EE Tile   |
+    | API     |     | Service   |
+    | (npm)   |     | (getMapId)|
+    +---------+     +-----------+
+         |                |
+    +---------------------------+
+    | Earth Engine Backend      |
+    | (unchanged — REST API)    |
+    +---------------------------+
+</pre>
+
+<h3>Key Technical Decisions</h3>
+<ul>
+<li><strong>EE API as a browser library.</strong> The npm package works standalone. No server-side proxy needed. Authentication via OAuth or service account tokens.</li>
+<li><strong>Cell execution model.</strong> Each cell runs in a scoped context with shared state. JS cells execute via the browser EE API. Python cells via Pyodide (WebAssembly) or a local kernel.</li>
+<li><strong>Cross-language bridge.</strong> EE's computation model is language-agnostic. Variables can be bridged between JS and Python by serializing/deserializing the EE computation graph.</li>
+<li><strong>Map rendering.</strong> Leaflet for 2D, Deck.gl for 3D/WebGL. EE tile layers via <code>getMapId()</code>. Drawing tools and click-to-inspect.</li>
+<li><strong>Storage.</strong> Notebooks as files in the local filesystem or git. No proprietary storage.</li>
+</ul>
+
+<h2 style="color: #1a5276;">What Makes It Better</h2>
+
+<h3>vs. the Code Editor</h3>
+
+<table style="border-collapse: collapse; width: 100%; margin: 15px 0;">
+<tr style="background: #1a5276; color: white;">
+<th style="padding: 10px; text-align: left;">Capability</th>
+<th style="padding: 10px; text-align: left;">Code Editor</th>
+<th style="padding: 10px; text-align: left;">eede</th>
+</tr>
+<tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;">Languages</td><td style="padding: 8px; border: 1px solid #ddd;">JavaScript only</td><td style="padding: 8px; border: 1px solid #ddd;">JavaScript + Python</td></tr>
+<tr><td style="padding: 8px; border: 1px solid #ddd;">Execution model</td><td style="padding: 8px; border: 1px solid #ddd;">Monolithic script</td><td style="padding: 8px; border: 1px solid #ddd;">Cell-based notebook</td></tr>
+<tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;">Debugging</td><td style="padding: 8px; border: 1px solid #ddd;"><code>print()</code> only</td><td style="padding: 8px; border: 1px solid #ddd;">Breakpoints, variable inspection</td></tr>
+<tr><td style="padding: 8px; border: 1px solid #ddd;">Version control</td><td style="padding: 8px; border: 1px solid #ddd;">Proprietary "Repo"</td><td style="padding: 8px; border: 1px solid #ddd;">Native git</td></tr>
+<tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;">Editor</td><td style="padding: 8px; border: 1px solid #ddd;">Custom (aging)</td><td style="padding: 8px; border: 1px solid #ddd;">Monaco (VS Code engine)</td></tr>
+<tr><td style="padding: 8px; border: 1px solid #ddd;">Extensibility</td><td style="padding: 8px; border: 1px solid #ddd;">None</td><td style="padding: 8px; border: 1px solid #ddd;">Plugin architecture</td></tr>
+<tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;">Map</td><td style="padding: 8px; border: 1px solid #ddd;">Custom (good)</td><td style="padding: 8px; border: 1px solid #ddd;">Leaflet/Deck.gl (extensible)</td></tr>
+<tr><td style="padding: 8px; border: 1px solid #ddd;">Batch/Export</td><td style="padding: 8px; border: 1px solid #ddd;">Basic task manager</td><td style="padding: 8px; border: 1px solid #ddd;">Dependency chains, retry, monitoring</td></tr>
+<tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;">Offline work</td><td style="padding: 8px; border: 1px solid #ddd;">Impossible</td><td style="padding: 8px; border: 1px solid #ddd;">Edit offline, run when connected</td></tr>
+<tr><td style="padding: 8px; border: 1px solid #ddd;">Collaboration</td><td style="padding: 8px; border: 1px solid #ddd;">Shared scripts</td><td style="padding: 8px; border: 1px solid #ddd;">Git branches, PRs, code review</td></tr>
+</table>
+
+<h3>vs. Jupyter + EE Python</h3>
+
+<table style="border-collapse: collapse; width: 100%; margin: 15px 0;">
+<tr style="background: #1a5276; color: white;">
+<th style="padding: 10px; text-align: left;">Capability</th>
+<th style="padding: 10px; text-align: left;">Jupyter + ee</th>
+<th style="padding: 10px; text-align: left;">eede</th>
+</tr>
+<tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;">Map integration</td><td style="padding: 8px; border: 1px solid #ddd;"><code>geemap</code> (separate widget)</td><td style="padding: 8px; border: 1px solid #ddd;">First-class, always visible</td></tr>
+<tr><td style="padding: 8px; border: 1px solid #ddd;">EE autocomplete</td><td style="padding: 8px; border: 1px solid #ddd;">Generic Python</td><td style="padding: 8px; border: 1px solid #ddd;">EE-aware (datasets, methods, bands)</td></tr>
+<tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;">JS support</td><td style="padding: 8px; border: 1px solid #ddd;">None</td><td style="padding: 8px; border: 1px solid #ddd;">Native</td></tr>
+<tr><td style="padding: 8px; border: 1px solid #ddd;">Asset browser</td><td style="padding: 8px; border: 1px solid #ddd;">None</td><td style="padding: 8px; border: 1px solid #ddd;">Built-in</td></tr>
+<tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;">Inspector</td><td style="padding: 8px; border: 1px solid #ddd;">None</td><td style="padding: 8px; border: 1px solid #ddd;">Click-to-inspect</td></tr>
+<tr><td style="padding: 8px; border: 1px solid #ddd;">Batch management</td><td style="padding: 8px; border: 1px solid #ddd;">Manual API calls</td><td style="padding: 8px; border: 1px solid #ddd;">Integrated UI</td></tr>
+<tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;">Migration from Code Editor</td><td style="padding: 8px; border: 1px solid #ddd;">Rewrite everything</td><td style="padding: 8px; border: 1px solid #ddd;">Copy-paste JS, gradually adopt Python</td></tr>
+</table>
+
+<h2 style="color: #1a5276;">The Dual-Language Story</h2>
+
+<p>This is eede's most important feature. ~80% of existing EE code is JavaScript. The Python API is growing, especially for ML/AI, but most EE knowledge, tutorials, and shared scripts are in JS. Forcing users to choose one language is a non-starter.</p>
+
+<p><strong>Why it works:</strong></p>
+<ol>
+<li><strong>EE computations are language-agnostic.</strong> Both JS and Python APIs serialize to the same intermediate representation.</li>
+<li><strong>EE objects can be serialized.</strong> <code>ee.Serializer</code> converts computation graphs to JSON; <code>ee.Deserializer</code> reconstructs them. Variables cross the language boundary losslessly.</li>
+<li><strong>The map is shared.</strong> <code>Map.addLayer()</code> in either language adds layers to the same Leaflet map.</li>
+</ol>
+
+<p><strong>Migration path:</strong></p>
+<ul>
+<li><em>Week 1:</em> Copy Code Editor scripts directly into eede. They run as-is in JS cells.</li>
+<li><em>Week 2:</em> Add Python cells for new analysis steps. Reference JS-defined variables from Python.</li>
+<li><em>Month 2:</em> Gradually port utilities to Python where it makes sense. Use Python for ML, pandas, matplotlib.</li>
+<li><em>Ongoing:</em> Use whichever language is best for each task.</li>
+</ul>
+
+<h2 style="color: #1a5276;">Batch System</h2>
+
+<p>The Code Editor's Export system is one of its weakest points. eede's batch system would provide:</p>
+<ul>
+<li><strong>Task graphs.</strong> Define dependencies between exports.</li>
+<li><strong>Retry with backoff.</strong> Automatic retry on transient failures.</li>
+<li><strong>Progress monitoring.</strong> Real-time progress, estimated completion, cost tracking.</li>
+<li><strong>Scheduling.</strong> Run exports on a schedule.</li>
+<li><strong>Local pre-processing.</strong> Local Python/JS steps as part of the pipeline.</li>
+<li><strong>Templates.</strong> Reusable export configurations.</li>
+</ul>
+
+<h2 style="color: #1a5276;">Extensibility Framework</h2>
+
+<p>A plugin API for: custom panels, data source plugins (S3, STAC catalogs), export targets (PostGIS, tile servers), analysis tools (fire detection, crop classification), and themes/layouts.</p>
+
+<h2 style="color: #1a5276;">Effort Estimate</h2>
+
+<table style="border-collapse: collapse; width: 100%; margin: 15px 0;">
+<tr style="background: #1a5276; color: white;">
+<th style="padding: 10px; text-align: left;">Phase</th>
+<th style="padding: 10px; text-align: left;">Scope</th>
+<th style="padding: 10px; text-align: left;">Timeline</th>
+</tr>
+<tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;">Phase 1: Core IDE</td><td style="padding: 8px; border: 1px solid #ddd;">Monaco editor, EE JS API, Leaflet map, console, asset browser</td><td style="padding: 8px; border: 1px solid #ddd;">8-12 weeks</td></tr>
+<tr><td style="padding: 8px; border: 1px solid #ddd;">Phase 2: Python + Dual-Language</td><td style="padding: 8px; border: 1px solid #ddd;">Pyodide, EE Python API, cross-language bridge</td><td style="padding: 8px; border: 1px solid #ddd;">6-8 weeks</td></tr>
+<tr style="background: #f9f9f9;"><td style="padding: 8px; border: 1px solid #ddd;">Phase 3: Developer Experience</td><td style="padding: 8px; border: 1px solid #ddd;">Autocomplete, docs, inspector, git integration</td><td style="padding: 8px; border: 1px solid #ddd;">4-6 weeks</td></tr>
+<tr><td style="padding: 8px; border: 1px solid #ddd;">Phase 4: Batch + Extensions</td><td style="padding: 8px; border: 1px solid #ddd;">Task graphs, retry, plugin API</td><td style="padding: 8px; border: 1px solid #ddd;">6-8 weeks</td></tr>
+</table>
+
+<p><strong>Total: ~6-9 months for a full-featured v1.</strong></p>
+
+<h2 style="color: #1a5276;">What We've Already Proven</h2>
+
+<ol>
+<li><strong>EE JS API works standalone in a browser.</strong> Loaded from npm, initialized with a gcloud token, runs all standard operations.</li>
+<li><strong>Real tile rendering works.</strong> <code>getMapId()</code> returns tile URLs that render correctly on Leaflet. Verified with 100+ EE computations.</li>
+<li><strong>The full Code Editor API surface can be mocked.</strong> <code>Map.addLayer</code>, <code>Export.image.toDrive</code>, <code>ui.Chart</code>, <code>print()</code> — all implementable outside the Code Editor.</li>
+<li><strong>99/103 golden test fixtures pass</strong> in our browser harness.</li>
+<li><strong>Authentication is straightforward.</strong> gcloud tokens and service account keys both work.</li>
+</ol>
+
+<h2 style="color: #1a5276;">The Strategic Case</h2>
+
+<p><strong>For Google:</strong> An active open source EE IDE community means more EE adoption, more compute on Google Cloud, and less maintenance burden. Google doesn't monetize the Code Editor — they monetize the compute. A better IDE drives more compute.</p>
+
+<p><strong>For the community:</strong> Modern tooling, version control, dual-language support, debugging, extensibility. The ability to build the features they've been requesting for years.</p>
+
+<p><strong>For science:</strong> Reproducible workflows (notebooks in git), better collaboration (PRs instead of shared scripts), and lower barriers to entry (Python support for the ML/AI crowd).</p>
+
+<h2 style="color: #1a5276;">Getting Involved</h2>
+
+<p>This is a community project. We need EE power users, frontend developers, Python/Pyodide experts, documentation people, and testers with diverse EE workflows.</p>
+
+<p>Full vision document and discussion: <a href="https://github.com/hughlynch/eede">github.com/hughlynch/eede</a></p>
+
+<hr style="margin-top: 30px;">
+<p style="font-size: 0.85em; color: #999; font-style: italic;">eede is not affiliated with or endorsed by Google. Earth Engine is a trademark of Google LLC.</p>
+
+</body></html>
