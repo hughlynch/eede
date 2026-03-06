@@ -15,6 +15,7 @@ import {
   chartToHtml,
   chartShimJS,
 } from './chartRenderer';
+import { runScriptFile } from './cellRunner';
 
 // The notebook controller executes JS and Python cells
 // against the Earth Engine API. JS runs via a child
@@ -106,8 +107,6 @@ export class EENotebookController
     source: string,
     execution: vscode.NotebookCellExecution
   ): Promise<void> {
-    const { execSync } = await import('child_process');
-
     // Inject bridged variables + serialize after.
     const varNames = extractJSVarNames(source);
     const preamble =
@@ -117,20 +116,25 @@ export class EENotebookController
       preamble + '\n' + source + '\n' + postamble
     );
 
-    const result = execSync(
-      `node -e ${escapeShell(script)}`,
+    const result = await runScriptFile(
+      'node',
+      script,
+      'js',
       {
-        encoding: 'utf-8',
-        timeout: 60000,
-        env: {
-          ...process.env,
-          EE_TOKEN: this._auth.token || '',
-          EE_PROJECT: this._auth.projectId || '',
-        },
+        EE_TOKEN: this._auth.token || '',
+        EE_PROJECT: this._auth.projectId || '',
       }
     );
 
-    const parsed = this._parseRunnerOutput(result);
+    if (result.exitCode !== 0 && !result.stdout) {
+      throw new Error(
+        result.stderr || `Exit code ${result.exitCode}`
+      );
+    }
+
+    const parsed = this._parseRunnerOutput(
+      result.stdout
+    );
 
     // Capture bridged variables.
     if (parsed.bridgeVars) {
@@ -200,7 +204,6 @@ export class EENotebookController
     source: string,
     execution: vscode.NotebookCellExecution
   ): Promise<void> {
-    const { execSync } = await import('child_process');
     const config =
       vscode.workspace.getConfiguration('eede');
     const pythonPath = config.get<string>(
@@ -217,20 +220,25 @@ export class EENotebookController
       preamble + '\n' + source + '\n' + postamble;
     const script = this._buildPythonRunner(augmented);
 
-    const result = execSync(
-      `${pythonPath} -c ${escapeShell(script)}`,
+    const result = await runScriptFile(
+      pythonPath,
+      script,
+      'py',
       {
-        encoding: 'utf-8',
-        timeout: 60000,
-        env: {
-          ...process.env,
-          EE_TOKEN: this._auth.token || '',
-          EE_PROJECT: this._auth.projectId || '',
-        },
+        EE_TOKEN: this._auth.token || '',
+        EE_PROJECT: this._auth.projectId || '',
       }
     );
 
-    const parsed = this._parseRunnerOutput(result);
+    if (result.exitCode !== 0 && !result.stdout) {
+      throw new Error(
+        result.stderr || `Exit code ${result.exitCode}`
+      );
+    }
+
+    const parsed = this._parseRunnerOutput(
+      result.stdout
+    );
 
     // Capture bridged variables.
     if (parsed.bridgeVars) {
@@ -548,8 +556,4 @@ _orig_print(json.dumps({
     }
     return { prints: [raw], layers: [], center: null };
   }
-}
-
-function escapeShell(s: string): string {
-  return "'" + s.replace(/'/g, "'\\''") + "'";
 }
