@@ -133,9 +133,19 @@
         },
         "eede.authMethod": {
           "type": "string",
-          "enum": ["gcloud", "service-account"],
+          "enum": ["gcloud", "oauth", "service-account"],
           "default": "gcloud",
           "description": "Authentication method for Earth Engine."
+        },
+        "eede.oauthClientId": {
+          "type": "string",
+          "default": "",
+          "description": "OAuth 2.0 client ID (for web-hosted deployments)."
+        },
+        "eede.oauthClientSecret": {
+          "type": "string",
+          "default": "",
+          "description": "OAuth 2.0 client secret (for web-hosted deployments)."
         },
         "eede.serviceAccountKeyPath": {
           "type": "string",

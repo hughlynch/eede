@@ -1,0 +1,15 @@
+services:
+  eede:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - EEDE_OAUTH_CLIENT_ID=${EEDE_OAUTH_CLIENT_ID:-}
+      - EEDE_OAUTH_CLIENT_SECRET=${EEDE_OAUTH_CLIENT_SECRET:-}
+    volumes:
+      - workspace:/home/coder/workspace
+      - gcloud-config:/home/coder/.config/gcloud
+
+volumes:
+  workspace:
+  gcloud-config:

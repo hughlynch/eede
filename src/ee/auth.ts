@@ -1,13 +1,21 @@
 import * as vscode from 'vscode';
 import { execSync } from 'child_process';
+import { EEOAuth } from './oauth';
 
 export class EEAuth {
   private _token: string | undefined;
   private _projectId: string | undefined;
   private _outputChannel: vscode.OutputChannel;
+  private _oauth: EEOAuth | undefined;
 
-  constructor(outputChannel: vscode.OutputChannel) {
+  constructor(
+    outputChannel: vscode.OutputChannel,
+    secrets?: vscode.SecretStorage
+  ) {
     this._outputChannel = outputChannel;
+    if (secrets) {
+      this._oauth = new EEOAuth(outputChannel, secrets);
+    }
   }
 
   get token(): string | undefined {
@@ -30,7 +38,9 @@ export class EEAuth {
     this._projectId =
       config.get<string>('projectId') || undefined;
 
-    if (method === 'service-account') {
+    if (method === 'oauth') {
+      await this._authOAuth();
+    } else if (method === 'service-account') {
       await this._authServiceAccount(config);
     } else {
       await this._authGcloud();
@@ -89,6 +99,18 @@ export class EEAuth {
     );
     // Token exchange happens via the EE API at runtime.
     this._token = `sa:${keyPath}`;
+  }
+
+  private async _authOAuth(): Promise<void> {
+    if (!this._oauth) {
+      throw new Error(
+        'OAuth not available (no secret storage).'
+      );
+    }
+    this._token = await this._oauth.authenticate();
+    this._outputChannel.appendLine(
+      'Auth: OAuth token acquired'
+    );
   }
 
   async getHeaders(): Promise<Record<string, string>> {

@@ -22,7 +22,10 @@ export async function activate(
   const eeState = new EEState();
 
   // Authentication.
-  const auth = new EEAuth(outputChannel);
+  const auth = new EEAuth(
+    outputChannel,
+    context.secrets
+  );
 
   // Tree views.
   const assetProvider = new AssetBrowserProvider(auth);
