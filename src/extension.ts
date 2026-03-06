@@ -11,6 +11,7 @@ import { EEAuth } from './ee/auth';
 import { EEState } from './ee/state';
 import { inspectPoint } from './ee/inspect';
 import { EEStatusBar } from './statusBar';
+import { importFromFile } from './importer/codeEditorImporter';
 
 export async function activate(
   context: vscode.ExtensionContext
@@ -122,6 +123,18 @@ export async function activate(
     vscode.commands.registerCommand(
       'eede.cancelTask', (item) => {
         taskProvider.cancelTask(item);
+      }
+    ),
+    vscode.commands.registerCommand(
+      'eede.importScript', () => {
+        importFromFile();
+      }
+    ),
+    vscode.commands.registerCommand(
+      'eede.toggleMap', () => {
+        MapPanel.createOrShow(
+          context.extensionUri, eeState
+        );
       }
     )
   );

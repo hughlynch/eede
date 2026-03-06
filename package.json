@@ -78,6 +78,35 @@
         "title": "Cancel Task",
         "icon": "$(close)",
         "category": "Earth Engine"
+      },
+      {
+        "command": "eede.importScript",
+        "title": "Import Code Editor Script",
+        "icon": "$(cloud-download)",
+        "category": "Earth Engine"
+      },
+      {
+        "command": "eede.toggleMap",
+        "title": "Toggle Map Panel",
+        "icon": "$(globe)",
+        "category": "Earth Engine"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "eede.toggleMap",
+        "key": "ctrl+shift+m",
+        "mac": "cmd+shift+m"
+      },
+      {
+        "command": "eede.openInspector",
+        "key": "ctrl+shift+i",
+        "mac": "cmd+shift+i"
+      },
+      {
+        "command": "eede.newNotebook",
+        "key": "ctrl+shift+n",
+        "mac": "cmd+shift+n"
       }
     ],
     "viewsContainers": {
@@ -165,7 +194,7 @@
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "test": "mocha --ui tdd out/test/variableBridge.test.js",
+    "test": "mocha --ui tdd out/test/variableBridge.test.js out/test/importer.test.js",
     "test:all": "mocha --ui tdd out/test/**/*.test.js",
     "lint": "eslint src --ext ts",
     "package": "vsce package"
