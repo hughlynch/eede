@@ -20,78 +20,78 @@ suite('EECompletionProvider', () => {
     return { document, position };
   }
 
-  test('completes ee. with type names', () => {
+  test('completes ee. with type names', async () => {
     const { document, position } = mockDocAndPos(
       'ee.'
     );
-    const items = provider.provideCompletionItems(
+    const items = await provider.provideCompletionItems(
       document as any,
       position as any
     );
     assert.ok(items);
     assert.ok(items!.length > 0);
     const labels = items!.map(
-      (i) => (i.label as string)
+      (i: any) => (i.label as string)
     );
     assert.ok(labels.includes('Image'));
     assert.ok(labels.includes('ImageCollection'));
     assert.ok(labels.includes('Reducer'));
   });
 
-  test('completes ee.Image. with methods', () => {
+  test('completes ee.Image. with methods', async () => {
     const { document, position } = mockDocAndPos(
       'ee.Image.'
     );
-    const items = provider.provideCompletionItems(
+    const items = await provider.provideCompletionItems(
       document as any,
       position as any
     );
     assert.ok(items);
     const labels = items!.map(
-      (i) => (i.label as string)
+      (i: any) => (i.label as string)
     );
     assert.ok(labels.includes('select'));
     assert.ok(labels.includes('addBands'));
     assert.ok(labels.includes('normalizedDifference'));
   });
 
-  test('completes Map. with methods', () => {
+  test('completes Map. with methods', async () => {
     const { document, position } = mockDocAndPos(
       'Map.'
     );
-    const items = provider.provideCompletionItems(
+    const items = await provider.provideCompletionItems(
       document as any,
       position as any
     );
     assert.ok(items);
     const labels = items!.map(
-      (i) => (i.label as string)
+      (i: any) => (i.label as string)
     );
     assert.ok(labels.includes('addLayer'));
     assert.ok(labels.includes('setCenter'));
   });
 
-  test('completes dataset IDs', () => {
+  test('completes dataset IDs', async () => {
     const { document, position } = mockDocAndPos(
       "ee.Image('"
     );
-    const items = provider.provideCompletionItems(
+    const items = await provider.provideCompletionItems(
       document as any,
       position as any
     );
     assert.ok(items);
     assert.ok(items!.length > 0);
     const labels = items!.map(
-      (i) => (i.label as string)
+      (i: any) => (i.label as string)
     );
     assert.ok(labels.includes('USGS/SRTMGL1_003'));
   });
 
-  test('returns undefined for unrelated lines', () => {
+  test('returns undefined for unrelated lines', async () => {
     const { document, position } = mockDocAndPos(
       'const x = 1 + '
     );
-    const items = provider.provideCompletionItems(
+    const items = await provider.provideCompletionItems(
       document as any,
       position as any
     );
