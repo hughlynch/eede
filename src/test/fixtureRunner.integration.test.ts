@@ -156,72 +156,119 @@ const Map = {
   },
   centerObject: function(obj, zoom) {
     mapCenter = { lng: 0, lat: 0, zoom: zoom || 10 };
-  }
+  },
+  setOptions: function() {},
+  getBounds: function() {
+    return ee.Geometry.Rectangle([-180, -90, 180, 90]);
+  },
+  getCenter: function() {
+    return ee.Geometry.Point([0, 0]);
+  },
+  getScale: function() { return 1; },
+  getZoom: function() { return 10; },
+  setZoom: function() {},
+  setControlVisibility: function() {},
+  remove: function() {},
+  style: function() { return this; },
+  onClick: function() {},
+  onChangeBounds: function() {},
+  onChangeCenter: function() {},
+  onChangeZoom: function() {},
+  onIdle: function() {},
+  unlisten: function() {}
 };
 
+function _exportTask(type, params) {
+  var desc = (params && params.description) || 'export';
+  prints.push(type + ': ' + desc);
+  return {
+    start: function() {},
+    status: function() { return { state: 'READY' }; },
+    id: 'stub-task-' + Date.now()
+  };
+}
 const Export = {
   image: {
-    toDrive: function(params) {
-      prints.push('Export.image.toDrive: ' +
-        (params.description || 'export'));
-    },
-    toAsset: function(params) {
-      prints.push('Export.image.toAsset: ' +
-        (params.description || 'export'));
-    },
-    toCloudStorage: function(params) {
-      prints.push('Export.image.toCloudStorage: ' +
-        (params.description || 'export'));
-    }
+    toDrive: function(p) { return _exportTask('Export.image.toDrive', p); },
+    toAsset: function(p) { return _exportTask('Export.image.toAsset', p); },
+    toCloudStorage: function(p) { return _exportTask('Export.image.toCloudStorage', p); }
   },
   table: {
-    toDrive: function(params) {
-      prints.push('Export.table.toDrive: ' +
-        (params.description || 'export'));
-    },
-    toAsset: function(params) {
-      prints.push('Export.table.toAsset: ' +
-        (params.description || 'export'));
-    }
+    toDrive: function(p) { return _exportTask('Export.table.toDrive', p); },
+    toAsset: function(p) { return _exportTask('Export.table.toAsset', p); },
+    toCloudStorage: function(p) { return _exportTask('Export.table.toCloudStorage', p); }
   },
   video: {
-    toDrive: function(params) {
-      prints.push('Export.video.toDrive: ' +
-        (params.description || 'export'));
-    }
+    toDrive: function(p) { return _exportTask('Export.video.toDrive', p); },
+    toCloudStorage: function(p) { return _exportTask('Export.video.toCloudStorage', p); }
   }
 };
 
-// Stub ui.Chart so scripts that use it don't crash.
+// Chainable stub — every method returns itself so any
+// .setOptions().setSeriesNames().setChartType() chain works.
+function _chartStub() {
+  var stub = {};
+  var handler = {
+    get: function(target, prop) {
+      if (prop in target) return target[prop];
+      return function() { return new Proxy(stub, handler); };
+    }
+  };
+  return new Proxy(stub, handler);
+}
+function _chartNs() {
+  return new Proxy({}, {
+    get: function() { return function() { return _chartStub(); }; }
+  });
+}
+
 var ui = {
   Chart: {
-    image: {
-      series: function() { return { setOptions: function() { return this; }, setChartType: function() { return this; } }; },
-      byRegion: function() { return { setOptions: function() { return this; } }; },
-      histogram: function() { return { setOptions: function() { return this; } }; },
-      regions: function() { return { setOptions: function() { return this; } }; },
-      doySeries: function() { return { setOptions: function() { return this; } }; },
-      doySeriesByYear: function() { return { setOptions: function() { return this; } }; },
-      doySeriesByRegion: function() { return { setOptions: function() { return this; } }; }
-    },
-    feature: {
-      byFeature: function() { return { setOptions: function() { return this; } }; },
-      byProperty: function() { return { setOptions: function() { return this; } }; },
-      groups: function() { return { setOptions: function() { return this; } }; },
-      histogram: function() { return { setOptions: function() { return this; } }; }
-    },
-    array: {
-      values: function() { return { setOptions: function() { return this; } }; }
-    }
+    image: _chartNs(),
+    feature: _chartNs(),
+    array: _chartNs()
   },
-  Map: {
-    addLayer: function() {},
-    setCenter: function() {},
-    centerObject: function() {},
-    setOptions: function() {}
+  Map: function() {
+    return {
+      addLayer: function(eeObj, visParams, name) { Map.addLayer(eeObj, visParams, name); return this; },
+      setCenter: function() { return this; },
+      centerObject: function() { return this; },
+      setOptions: function() { return this; },
+      setControlVisibility: function() { return this; },
+      style: function() { return this; },
+      add: function() { return this; },
+      remove: function() { return this; },
+      getBounds: function() { return ee.Geometry.Rectangle([-180,-90,180,90]); },
+      getCenter: function() { return ee.Geometry.Point([0,0]); },
+      widgets: function() { return { set: function() {} }; }
+    };
   },
-  Thumbnail: function() { return { style: function() { return this; } }; }
+  Panel: function() {
+    return new Proxy({}, {
+      get: function(t, p) {
+        if (p === 'add') return function() { return new Proxy({}, this); };
+        return function() { return new Proxy({}, this); };
+      }
+    });
+  },
+  Label: function() { return { style: function() { return this; }, setValue: function() { return this; } }; },
+  Button: function() { return { style: function() { return this; }, onClick: function() { return this; } }; },
+  Select: function() { return { style: function() { return this; }, onChange: function() { return this; } }; },
+  Textbox: function() { return { style: function() { return this; } }; },
+  Slider: function() { return { style: function() { return this; }, onChange: function() { return this; }, setValue: function() { return this; } }; },
+  Thumbnail: function() { return { style: function() { return this; } }; },
+  SplitPanel: function() { return { setFirstPanel: function() { return this; }, setSecondPanel: function() { return this; } }; },
+  root: { clear: function() {}, add: function() {}, insert: function() {}, remove: function() {}, widgets: function() { return { set: function() {}, get: function() { return null; }, length: function() { return 0; } }; } }
 };
+
+// Patch ee.batch.Export to use our stub instead of real API.
+ee.batch = ee.batch || {};
+ee.batch.Export = Export;
+
+// Add static constructors to ui.Map.
+ui.Map.Linker = function() { return { add: function() { return this; }, getValue: function() { return []; } }; };
+ui.Map.Layer = function() { return { setOpacity: function() { return this; } }; };
+ui.Map.CloudStorageLayer = function() { return {}; };
 
 const token = process.env.EE_TOKEN;
 const project = process.env.EE_PROJECT;
@@ -301,16 +348,37 @@ suite('Geeni Fixture Runner', function () {
 
         let code = fixture.reference_answer.code_js!;
 
-        // Inject context variables (e.g. roi from context.region).
-        // Only inject if the region looks like valid EE code.
+        // Inject context variables from fixture metadata.
         const ctx = fixture.context || {};
-        if (ctx.region &&
-            ctx.region.startsWith('ee.Geometry') &&
-            !code.includes('var roi') &&
-            !code.includes('let roi') &&
-            !code.includes('const roi')) {
-          code = `var roi = ${ctx.region};\n` + code;
+        let preamble = '';
+        const geoVars = ['roi', 'geometry', 'aoi', 'region', 'studyArea', 'sampleArea'];
+
+        function needsVar(c: string, v: string): boolean {
+          const re = new RegExp('\\b' + v + '\\b');
+          return re.test(c) &&
+            !c.includes('var ' + v) &&
+            !c.includes('let ' + v) &&
+            !c.includes('const ' + v);
         }
+
+        // Inject region from fixture context.
+        if (ctx.region && ctx.region.startsWith('ee.Geometry')) {
+          for (const v of geoVars) {
+            if (needsVar(code, v)) {
+              preamble += `var ${v} = ${ctx.region};\n`;
+            }
+          }
+        }
+
+        // Provide a default geometry for undefined geo vars.
+        const defaultGeom = "ee.Geometry.Point([-122.4194, 37.7749])";
+        for (const v of geoVars) {
+          if (needsVar(code, v) && !preamble.includes('var ' + v)) {
+            preamble += `var ${v} = ${defaultGeom};\n`;
+          }
+        }
+
+        if (preamble) { code = preamble + code; }
 
         const script = buildJSRunner(code);
 
