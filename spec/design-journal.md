@@ -198,3 +198,54 @@ Completed iterations 17-20:
 
 5. **Marketplace publishing.** Package and publish to VS Code
    marketplace as preview.
+
+---
+
+## Session 3 — 2026-03-07: Auth Fix, Shim Improvements, Project Selection
+
+### Context
+
+Running the fixture runner (144 EE golden/EEFA fixtures) against
+the real EE API exposed two major issues: auth token expiration
+after 60 minutes, and incomplete JS shims for Export, ui.Chart,
+and ui.Map.
+
+### Changes Made
+
+1. **Auth token refresh.** Replaced single-token-at-startup with
+   per-fixture token fetch via GCE metadata server (~1ms, never
+   expires). Falls back to gcloud on non-GCE hosts. Result:
+   59/144 → 101/144 passing.
+
+2. **Shim improvements.** Extended Export stubs (`.start()`,
+   `.status()`, `ee.batch.Export` patch), added Proxy-based
+   ui.Chart (fully chainable), made ui.Map a constructor with
+   `ui.Map.Linker`, added Map methods (setOptions, getBounds,
+   getCenter, getScale, getZoom, event handlers), extended
+   context injection to 6 common geometry variable names.
+   Result: 101/144 → 124/144 passing.
+
+3. **Project selection.** Added `eede.selectProject` command:
+   lists GCP projects via gcloud, checks EE API enablement,
+   offers to enable it, saves to settings. Status bar dynamically
+   shows project or auth command.
+
+### Remaining Failures (20/144)
+
+- 8 EEFA Code Editor imports (require bundled modules, unfixable)
+- 7 heavy compute timeouts (>90s)
+- 3 fixture bugs (fixed in geeni)
+- 2 misc shim gaps
+
+### Commits
+
+1. `53117dd` Fix variable bridge scoping
+2. `f1a4151` GCE metadata server auth tokens
+3. `7b9b5e3` Shim improvements (124/144)
+4. `510ce44` Project selection with EE API check
+
+### Next
+
+- Geeni chat sidebar (webview panel)
+- Python/geemap shim in cell runner
+- Domain mapping for eede.abwp.ai
