@@ -12,6 +12,7 @@ import { EEState } from './ee/state';
 import { inspectPoint } from './ee/inspect';
 import { EEStatusBar } from './statusBar';
 import { importFromFile } from './importer/codeEditorImporter';
+import { GeeniPanel } from './chat/geeniPanel';
 
 export async function activate(
   context: vscode.ExtensionContext
@@ -169,6 +170,13 @@ export async function activate(
         await selectProject(auth, statusBar, outputChannel);
         assetProvider.refresh();
         taskProvider.refresh();
+      }
+    ),
+    vscode.commands.registerCommand(
+      'eede.openGeeni', () => {
+        GeeniPanel.createOrShow(
+          context.extensionUri, eeState
+        );
       }
     )
   );

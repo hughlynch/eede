@@ -108,6 +108,12 @@
         "title": "Select Cloud Project",
         "icon": "$(cloud)",
         "category": "Earth Engine"
+      },
+      {
+        "command": "eede.openGeeni",
+        "title": "Ask Geeni (EE Expert)",
+        "icon": "$(comment-discussion)",
+        "category": "Earth Engine"
       }
     ],
     "keybindings": [
@@ -125,6 +131,11 @@
         "command": "eede.newNotebook",
         "key": "ctrl+shift+n",
         "mac": "cmd+shift+n"
+      },
+      {
+        "command": "eede.openGeeni",
+        "key": "ctrl+shift+g",
+        "mac": "cmd+shift+g"
       }
     ],
     "viewsContainers": {
@@ -216,6 +227,16 @@
           "type": "string",
           "default": "",
           "description": "Path to service account key JSON (when authMethod is service-account)."
+        },
+        "eede.geeniEndpoint": {
+          "type": "string",
+          "default": "",
+          "description": "Geeni gateway URL (e.g. https://geeni.dev). Leave empty to use local worker."
+        },
+        "eede.geeniWorkerPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to geeni repo for local worker mode (when no gateway endpoint is set)."
         }
       }
     }
