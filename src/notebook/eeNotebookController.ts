@@ -424,6 +424,17 @@ const project = process.env.EE_PROJECT;
 // Node.js-compatible auth: set token directly on the
 // internal auth token object, bypassing browser-only
 // setAuthToken which tries to load gapi via document.
+// Debug: check token presence.
+if (!token) {
+  console.log(JSON.stringify({
+    prints: ['Auth error: no EE_TOKEN provided. ' +
+      'Run Earth Engine: Authenticate from the ' +
+      'command palette after gcloud auth login.'],
+    layers: [], center: null
+  }));
+  process.exit(0);
+}
+
 ee.data.authToken_ = 'Bearer ' + token;
 ee.data.authClientId_ = null;
 if (project) {

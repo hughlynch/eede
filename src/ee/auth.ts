@@ -49,10 +49,36 @@ export class EEAuth {
 
   private async _authGcloud(): Promise<void> {
     try {
-      const token = execSync(
-        'gcloud auth print-access-token',
-        { encoding: 'utf-8', timeout: 10000 }
-      ).trim();
+      // Try application-default first (works after
+      // gcloud auth application-default login), then
+      // fall back to regular gcloud auth.
+      let token = '';
+      for (const cmd of [
+        'gcloud auth application-default ' +
+          'print-access-token 2>&1',
+        'gcloud auth print-access-token 2>&1',
+      ]) {
+        try {
+          const raw = execSync(cmd, {
+            encoding: 'utf-8', timeout: 10000,
+          });
+          const t = raw.trim();
+          if (t && !t.startsWith('ERROR') &&
+              t.startsWith('ya29.')) {
+            token = t;
+            break;
+          }
+        } catch {
+          continue;
+        }
+      }
+      if (!token) {
+        throw new Error(
+          'No valid token from gcloud. Run ' +
+          '"gcloud auth application-default login" ' +
+          'in the terminal.'
+        );
+      }
       this._token = token;
 
       if (!this._projectId) {
