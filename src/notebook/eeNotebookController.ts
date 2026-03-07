@@ -424,7 +424,6 @@ const project = process.env.EE_PROJECT;
 // Node.js-compatible auth: set token directly on the
 // internal auth token object, bypassing browser-only
 // setAuthToken which tries to load gapi via document.
-// Debug: check token presence.
 if (!token) {
   console.log(JSON.stringify({
     prints: ['Auth error: no EE_TOKEN provided. ' +
@@ -435,26 +434,29 @@ if (!token) {
   process.exit(0);
 }
 
-ee.data.authToken_ = 'Bearer ' + token;
-ee.data.authClientId_ = null;
-if (project) {
-  try { ee.data.setProject(project); } catch(e) {}
-}
-
-ee.initialize(null, null, () => {
-  try {
-    ${userCode}
-  } catch(e) {
-    prints.push('ERROR: ' + e.message);
-  }
-  // If no async layers pending, emit now.
-  if (pendingLayers === 0) emitResult();
-}, (e) => {
-  console.log(JSON.stringify({
-    prints: ['EE init error: ' + e],
-    layers: [], center: null
-  }));
-});
+// Pass false as 7th arg (updateAuthLibrary) to skip
+// browser-only gapi jsloader. This is the Node.js-
+// compatible way to set an auth token.
+ee.data.setAuthToken('', 'Bearer', token, 3600, [],
+  () => {
+    if (project) ee.data.setProject(project);
+    ee.initialize(null, null, () => {
+      try {
+        ${userCode}
+      } catch(e) {
+        prints.push('ERROR: ' + e.message);
+      }
+      // If no async layers pending, emit now.
+      if (pendingLayers === 0) emitResult();
+    }, (e) => {
+      console.log(JSON.stringify({
+        prints: ['EE init error: ' + e],
+        layers: [], center: null
+      }));
+    });
+  },
+  false
+);
 `;
   }
 
