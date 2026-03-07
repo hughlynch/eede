@@ -16,6 +16,7 @@ import {
   chartShimJS,
 } from './chartRenderer';
 import { runScriptFile } from './cellRunner';
+import * as path from 'path';
 
 // The notebook controller executes JS and Python cells
 // against the Earth Engine API. JS runs via a child
@@ -130,6 +131,12 @@ export class EENotebookController
       preamble + '\n' + source + '\n' + postamble
     );
 
+    // Point NODE_PATH at the extension's node_modules
+    // so the temp script can find @google/earthengine.
+    const extModules = path.resolve(
+      __dirname, '..', 'node_modules'
+    );
+
     const result = await runScriptFile(
       'node',
       script,
@@ -137,6 +144,7 @@ export class EENotebookController
       {
         EE_TOKEN: this._auth.token || '',
         EE_PROJECT: this._auth.projectId || '',
+        NODE_PATH: extModules,
       }
     );
 
