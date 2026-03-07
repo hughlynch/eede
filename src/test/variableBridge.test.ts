@@ -64,7 +64,7 @@ Map = something
     const code = pyDeserializeVars(vars);
     assert.ok(code.includes('x = json.loads'));
     assert.ok(
-      code.includes('ee.Deserializer.fromJSON')
+      code.includes('ee.deserializer.fromJSON')
     );
   });
 

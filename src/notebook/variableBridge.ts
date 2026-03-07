@@ -73,7 +73,7 @@ export function pyDeserializeVars(
   return vars
     .map((v) => {
       if (v.type === 'ee') {
-        return `${v.name} = ee.Deserializer.fromJSON(${JSON.stringify(v.value)})`;
+        return `${v.name} = ee.deserializer.fromJSON(${JSON.stringify(v.value)})`;
       }
       return `${v.name} = json.loads(${JSON.stringify(v.value)})`;
     })

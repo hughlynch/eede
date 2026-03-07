@@ -311,7 +311,6 @@ const ee = require('@google/earthengine');
 const prints = [];
 const layers = [];
 let mapCenter = null;
-let pendingLayers = 0;
 ${chartShimJS()}
 
 function print(...args) {
@@ -327,7 +326,6 @@ function print(...args) {
 }
 
 function emitResult() {
-  if (pendingLayers > 0) return;
   console.log(JSON.stringify({
     prints, layers, center: mapCenter,
     bridgeVars: typeof __bridge_vars !== 'undefined'
@@ -350,26 +348,18 @@ const Map = {
     };
     layers.push(layer);
 
-    // Get real tile URL via getMapId.
-    pendingLayers++;
+    // Get tile URL via getMapId (synchronous in this
+    // version of the EE JS API).
     try {
       const vizImage = (eeObj.visualize)
         ? eeObj.visualize(visParams || {})
         : eeObj;
-      vizImage.getMapId({}).then(function(mapId) {
-        if (mapId && mapId.urlFormat) {
-          layer.tileUrl = mapId.urlFormat;
-        }
-        pendingLayers--;
-        emitResult();
-      }).catch(function(err) {
-        prints.push('Map.addLayer warning: ' + err);
-        pendingLayers--;
-        emitResult();
-      });
+      const mapId = vizImage.getMapId({});
+      if (mapId && mapId.urlFormat) {
+        layer.tileUrl = mapId.urlFormat;
+      }
     } catch(e) {
       prints.push('Map.addLayer warning: ' + e.message);
-      pendingLayers--;
     }
   },
   setCenter: function(lng, lat, zoom) {
@@ -446,8 +436,7 @@ ee.data.setAuthToken('', 'Bearer', token, 3600, [],
       } catch(e) {
         prints.push('ERROR: ' + e.message);
       }
-      // If no async layers pending, emit now.
-      if (pendingLayers === 0) emitResult();
+      emitResult();
     }, (e) => {
       console.log(JSON.stringify({
         prints: ['EE init error: ' + e],
