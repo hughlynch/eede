@@ -421,31 +421,30 @@ const Export = {
 const token = process.env.EE_TOKEN;
 const project = process.env.EE_PROJECT;
 
-ee.data.setAuthToken(null, 'Bearer', token, 3600, [],
-  () => {
-    if (project) ee.data.setProject(project);
-    ee.initialize(null, null, () => {
-      try {
-        ${userCode}
-      } catch(e) {
-        prints.push('ERROR: ' + e.message);
-      }
-      // If no async layers pending, emit now.
-      if (pendingLayers === 0) emitResult();
-    }, (e) => {
-      console.log(JSON.stringify({
-        prints: ['EE init error: ' + e],
-        layers: [], center: null
-      }));
-    });
-  },
-  (e) => {
-    console.log(JSON.stringify({
-      prints: ['Auth error: ' + e],
-      layers: [], center: null
-    }));
+// Node.js-compatible auth: set token directly on the
+// internal auth token object, bypassing browser-only
+// setAuthToken which tries to load gapi via document.
+ee.data.authToken_ = 'Bearer ' + token;
+ee.data.authClientId_ = null;
+if (project) ee.data.setCloudApiKey(null);
+if (project) {
+  try { ee.data.setProject(project); } catch(e) {}
+}
+
+ee.initialize(null, null, () => {
+  try {
+    ${userCode}
+  } catch(e) {
+    prints.push('ERROR: ' + e.message);
   }
-);
+  // If no async layers pending, emit now.
+  if (pendingLayers === 0) emitResult();
+}, (e) => {
+  console.log(JSON.stringify({
+    prints: ['EE init error: ' + e],
+    layers: [], center: null
+  }));
+});
 `;
   }
 
