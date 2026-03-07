@@ -139,6 +139,13 @@ export class EEAuth {
     );
   }
 
+  async setProject(projectId: string): Promise<void> {
+    this._projectId = projectId;
+    this._outputChannel.appendLine(
+      `Auth: project set to ${projectId}`
+    );
+  }
+
   async getHeaders(): Promise<Record<string, string>> {
     if (!this._token) {
       await this.authenticate();

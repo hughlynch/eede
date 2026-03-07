@@ -163,6 +163,13 @@ export async function activate(
           'notebook.cell.clearOutputs'
         );
       }
+    ),
+    vscode.commands.registerCommand(
+      'eede.selectProject', async () => {
+        await selectProject(auth, statusBar, outputChannel);
+        assetProvider.refresh();
+        taskProvider.refresh();
+      }
     )
   );
 
@@ -219,6 +226,108 @@ export async function activate(
   );
 
   outputChannel.appendLine('eede activated.');
+}
+
+async function selectProject(
+  auth: EEAuth,
+  statusBar: EEStatusBar,
+  outputChannel: vscode.OutputChannel
+): Promise<void> {
+  // List GCP projects the user has access to.
+  let projects: string[] = [];
+  try {
+    const { execSync } = require('child_process');
+    const raw = execSync(
+      'gcloud projects list --format="value(projectId)" ' +
+      '--sort-by=projectId 2>/dev/null',
+      { encoding: 'utf-8', timeout: 15000 }
+    );
+    projects = raw.trim().split('\n').filter(Boolean);
+  } catch {
+    // Fall through to manual entry.
+  }
+
+  let selected: string | undefined;
+  if (projects.length > 0) {
+    selected = await vscode.window.showQuickPick(
+      projects,
+      {
+        placeHolder: 'Select a Google Cloud project for Earth Engine',
+        title: 'Earth Engine Project',
+      }
+    );
+  }
+
+  if (!selected) {
+    selected = await vscode.window.showInputBox({
+      prompt: 'Enter Google Cloud project ID',
+      placeHolder: 'my-project-id',
+      value: auth.projectId || '',
+    });
+  }
+
+  if (!selected) { return; }
+
+  // Check if the EE API is enabled on this project.
+  outputChannel.appendLine(
+    `Checking Earth Engine API on project ${selected}...`
+  );
+
+  let eeEnabled = false;
+  try {
+    const { execSync } = require('child_process');
+    const services = execSync(
+      `gcloud services list --project="${selected}" ` +
+      '--format="value(config.name)" ' +
+      '--filter="config.name:earthengine" 2>/dev/null',
+      { encoding: 'utf-8', timeout: 15000 }
+    );
+    eeEnabled = services.includes('earthengine');
+  } catch {
+    // Can't check — assume it's fine and let EE API
+    // report the error at runtime.
+    eeEnabled = true;
+  }
+
+  if (!eeEnabled) {
+    const enable = await vscode.window.showWarningMessage(
+      `Earth Engine API is not enabled on project "${selected}".`,
+      'Enable it',
+      'Use anyway'
+    );
+    if (enable === 'Enable it') {
+      try {
+        const { execSync } = require('child_process');
+        execSync(
+          `gcloud services enable earthengine.googleapis.com ` +
+          `--project="${selected}" 2>&1`,
+          { encoding: 'utf-8', timeout: 30000 }
+        );
+        vscode.window.showInformationMessage(
+          'Earth Engine API enabled.'
+        );
+      } catch (err) {
+        vscode.window.showErrorMessage(
+          `Failed to enable EE API: ${err}`
+        );
+        return;
+      }
+    } else if (enable !== 'Use anyway') {
+      return;
+    }
+  }
+
+  // Save to settings and update auth.
+  await auth.setProject(selected);
+  const config = vscode.workspace.getConfiguration('eede');
+  await config.update(
+    'projectId', selected,
+    vscode.ConfigurationTarget.Global
+  );
+  statusBar.update();
+  vscode.window.showInformationMessage(
+    `Earth Engine project set to "${selected}".`
+  );
 }
 
 export function deactivate() {}

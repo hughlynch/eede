@@ -10,7 +10,6 @@ export class EEStatusBar implements vscode.Disposable {
       vscode.StatusBarAlignment.Left,
       50
     );
-    this._item.command = 'eede.authenticate';
     this._update();
     this._item.show();
   }
@@ -26,12 +25,14 @@ export class EEStatusBar implements vscode.Disposable {
       this._item.text =
         `$(globe) EE: ${project}`;
       this._item.tooltip =
-        'Earth Engine: authenticated. Click to re-auth.';
+        'Earth Engine: authenticated. Click to change project.';
+      this._item.command = 'eede.selectProject';
       this._item.backgroundColor = undefined;
     } else {
       this._item.text = '$(globe) EE: not connected';
       this._item.tooltip =
         'Click to authenticate with Earth Engine.';
+      this._item.command = 'eede.authenticate';
       this._item.backgroundColor =
         new vscode.ThemeColor(
           'statusBarItem.warningBackground'

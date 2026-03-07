@@ -102,6 +102,12 @@
         "title": "Clear Cell Output",
         "icon": "$(clear-all)",
         "category": "Earth Engine"
+      },
+      {
+        "command": "eede.selectProject",
+        "title": "Select Cloud Project",
+        "icon": "$(cloud)",
+        "category": "Earth Engine"
       }
     ],
     "keybindings": [
