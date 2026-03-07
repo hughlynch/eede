@@ -356,13 +356,13 @@ const Map = {
       const vizImage = (eeObj.visualize)
         ? eeObj.visualize(visParams || {})
         : eeObj;
-      vizImage.getMapId({}, function(mapId) {
+      vizImage.getMapId({}).then(function(mapId) {
         if (mapId && mapId.urlFormat) {
           layer.tileUrl = mapId.urlFormat;
         }
         pendingLayers--;
         emitResult();
-      }, function(err) {
+      }).catch(function(err) {
         prints.push('Map.addLayer warning: ' + err);
         pendingLayers--;
         emitResult();
