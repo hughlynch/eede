@@ -311,6 +311,7 @@ const ee = require('@google/earthengine');
 const prints = [];
 const layers = [];
 let mapCenter = null;
+var __bridge_vars = [];
 ${chartShimJS()}
 
 function print(...args) {

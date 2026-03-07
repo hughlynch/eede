@@ -5,6 +5,12 @@
 import * as assert from 'assert';
 import { execSync } from 'child_process';
 import { runScriptFile } from '../notebook/cellRunner';
+import {
+  extractJSVarNames,
+  jsSerializeVars,
+  jsDeserializeVars,
+  SerializedVar,
+} from '../notebook/variableBridge';
 import * as path from 'path';
 
 // Get a real token for testing. Skip if unavailable.
@@ -33,6 +39,7 @@ const ee = require('@google/earthengine');
 const prints = [];
 const layers = [];
 let mapCenter = null;
+var __bridge_vars = [];
 
 function print(...args) {
   const strs = args.map(a => {
@@ -262,4 +269,84 @@ suite('Cell Runner Integration', function () {
       parsed.prints.some(p => p.includes('no EE_TOKEN'))
     );
   });
+
+  test('variable bridge: cell 1 var available in cell 2',
+    async function () {
+      if (skip) return this.skip();
+
+      // Cell 1: define dem
+      const cell1Source =
+        "var dem = ee.Image('USGS/SRTMGL1_003');";
+      const cell1VarNames = extractJSVarNames(cell1Source);
+      assert.deepStrictEqual(cell1VarNames, ['dem']);
+
+      const cell1Postamble = jsSerializeVars(cell1VarNames);
+      const cell1Script = buildJSRunner(
+        cell1Source + '\n' + cell1Postamble
+      );
+
+      const result1 = await runScriptFile(
+        'node', cell1Script, 'js',
+        {
+          EE_TOKEN: token,
+          EE_PROJECT: project,
+          NODE_PATH: nodeModules,
+        },
+        30000
+      );
+      assert.strictEqual(result1.exitCode, 0,
+        'cell 1 stderr: ' + result1.stderr);
+      const parsed1 = parseOutput(result1.stdout);
+      assert.ok(parsed1.bridgeVars,
+        'should have bridgeVars');
+      assert.ok(parsed1.bridgeVars!.length > 0,
+        'bridgeVars should not be empty');
+
+      const bridgeVars = parsed1.bridgeVars as
+        SerializedVar[];
+      assert.strictEqual(bridgeVars[0].name, 'dem');
+      assert.strictEqual(bridgeVars[0].type, 'ee');
+
+      // Cell 2: use dem from bridge
+      const cell2Source =
+        "var stats = dem.reduceRegion({" +
+        "reducer: ee.Reducer.mean()," +
+        "geometry: ee.Geometry.Point([-122.4, 37.8])," +
+        "scale: 90" +
+        "});\nprint('stats:', stats);";
+      const cell2Preamble =
+        jsDeserializeVars(bridgeVars);
+      const cell2VarNames = extractJSVarNames(cell2Source);
+      const cell2Postamble =
+        jsSerializeVars(cell2VarNames);
+      const cell2Script = buildJSRunner(
+        cell2Preamble + '\n' + cell2Source + '\n' +
+        cell2Postamble
+      );
+
+      const result2 = await runScriptFile(
+        'node', cell2Script, 'js',
+        {
+          EE_TOKEN: token,
+          EE_PROJECT: project,
+          NODE_PATH: nodeModules,
+        },
+        30000
+      );
+      assert.strictEqual(result2.exitCode, 0,
+        'cell 2 stderr: ' + result2.stderr);
+      const parsed2 = parseOutput(result2.stdout);
+      assert.ok(
+        parsed2.prints.some(p => p.includes('stats:')),
+        'should print stats, got: ' +
+          JSON.stringify(parsed2.prints)
+      );
+      assert.ok(
+        !parsed2.prints.some(p =>
+          p.includes('dem is not defined')
+        ),
+        'dem should be defined via bridge'
+      );
+    }
+  );
 });

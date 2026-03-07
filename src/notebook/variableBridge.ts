@@ -25,7 +25,7 @@ export function jsSerializeVars(
 ): string {
   return `
 // Serialize variables for cross-cell bridge.
-const __bridge_vars = [];
+__bridge_vars = [];
 ${varNames
   .map(
     (v) => `
