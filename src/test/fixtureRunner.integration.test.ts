@@ -2,7 +2,9 @@
 // This validates that geeni's reference answers actually
 // execute correctly against the real EE API.
 //
-// Requires: gcloud auth, @google/earthengine installed.
+// Auth priority:
+//   1. GCE metadata server (auto-refreshing, no expiry)
+//   2. gcloud auth (expires after ~60 min)
 
 import * as assert from 'assert';
 import * as fs from 'fs';
@@ -12,14 +14,46 @@ import { runScriptFile } from '../notebook/cellRunner';
 import { chartShimJS } from '../notebook/chartRenderer';
 
 // ---------- auth ----------
-let token = '';
 let project = '';
+let useMetadata = false;
+
+// Check for GCE metadata server (instant, auto-refreshing).
 try {
-  token = execSync(
+  const metaResp = execSync(
+    'curl -sf -H "Metadata-Flavor: Google" ' +
+    '"http://metadata.google.internal/computeMetadata/v1/' +
+    'instance/service-accounts/default/email" 2>/dev/null',
+    { encoding: 'utf-8', timeout: 3000 }
+  ).trim();
+  if (metaResp.includes('@')) {
+    useMetadata = true;
+  }
+} catch {
+  // Not on GCE.
+}
+
+// Get a fresh token. On GCE this hits the metadata server
+// (never expires). Otherwise falls back to gcloud.
+function getToken(): string {
+  if (useMetadata) {
+    const raw = execSync(
+      'curl -sf -H "Metadata-Flavor: Google" ' +
+      '"http://metadata.google.internal/computeMetadata/v1/' +
+      'instance/service-accounts/default/token"',
+      { encoding: 'utf-8', timeout: 5000 }
+    );
+    return JSON.parse(raw).access_token;
+  }
+  return execSync(
     'gcloud auth application-default print-access-token 2>/dev/null' +
     ' || gcloud auth print-access-token 2>/dev/null',
     { encoding: 'utf-8', timeout: 10000 }
   ).trim();
+}
+
+let token = '';
+try {
+  token = getToken();
   project = execSync(
     'gcloud config get-value project 2>/dev/null',
     { encoding: 'utf-8', timeout: 5000 }
@@ -262,6 +296,9 @@ suite('Geeni Fixture Runner', function () {
       async function () {
         if (skip) return this.skip();
 
+        // Refresh token per-fixture to avoid expiry.
+        const freshToken = getToken();
+
         let code = fixture.reference_answer.code_js!;
 
         // Inject context variables (e.g. roi from context.region).
@@ -282,7 +319,7 @@ suite('Geeni Fixture Runner', function () {
           script,
           'js',
           {
-            EE_TOKEN: token,
+            EE_TOKEN: freshToken,
             EE_PROJECT: project,
             NODE_PATH: nodeModules,
           },

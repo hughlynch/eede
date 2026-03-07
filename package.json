@@ -220,6 +220,7 @@
     "watch": "tsc -watch -p ./",
     "test": "mocha --ui tdd out/test/variableBridge.test.js out/test/importer.test.js",
     "test:integration": "mocha --ui tdd --timeout 30000 out/test/cellRunner.integration.test.js",
+    "test:fixtures": "mocha --ui tdd --timeout 120000 out/test/fixtureRunner.integration.test.js",
     "test:all": "mocha --ui tdd out/test/**/*.test.js",
     "lint": "eslint src --ext ts",
     "package": "vsce package"
