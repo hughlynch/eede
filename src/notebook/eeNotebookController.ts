@@ -426,7 +426,6 @@ const project = process.env.EE_PROJECT;
 // setAuthToken which tries to load gapi via document.
 ee.data.authToken_ = 'Bearer ' + token;
 ee.data.authClientId_ = null;
-if (project) ee.data.setCloudApiKey(null);
 if (project) {
   try { ee.data.setProject(project); } catch(e) {}
 }
