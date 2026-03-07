@@ -133,8 +133,10 @@ export class EENotebookController
 
     // Point NODE_PATH at the extension's node_modules
     // so the temp script can find @google/earthengine.
+    // __dirname is out/notebook/, extension root is two
+    // levels up.
     const extModules = path.resolve(
-      __dirname, '..', 'node_modules'
+      __dirname, '..', '..', 'node_modules'
     );
 
     const result = await runScriptFile(
